@@ -44,3 +44,17 @@ Environment variables are validated in `src/lib/env.ts` (`NODE_ENV`, `PORT`, `DB
 
 The template includes WebSocket realtime support at `GET /ws` using `src/lib/realtime.ts`.
 Clients should provide an auth token (Bearer header or `?token=` query) before subscribing.
+Tokens are validated as `<base64url(payload)>.<hex_hmac_sha256_signature>` and require
+`REALTIME_AUTH_SECRET` to be configured on the server.
+
+Payload shape:
+
+```json
+{
+  "sub": "user-id",
+  "claims": ["realtime:users", "realtime:orders"],
+  "exp": 1735689600
+}
+```
+
+Use `realtime:*` only for trusted service clients.
