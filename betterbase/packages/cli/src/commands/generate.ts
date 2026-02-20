@@ -206,13 +206,31 @@ function ensureRealtimeUtility(projectRoot: string): void {
   const realtimePath = path.join(projectRoot, 'src/lib/realtime.ts');
   if (existsSync(realtimePath)) return;
 
-  const canonicalRealtimePath = path.resolve(import.meta.dir, '../../../../templates/base/src/lib/realtime.ts');
+  const canonicalRealtimePath = resolveCanonicalRealtimeTemplatePath();
   if (!existsSync(canonicalRealtimePath)) {
     throw new Error(`Canonical realtime template not found at ${canonicalRealtimePath}`);
   }
 
   mkdirSync(path.dirname(realtimePath), { recursive: true });
   writeFileSync(realtimePath, readFileSync(canonicalRealtimePath, 'utf-8'));
+}
+
+function resolveCanonicalRealtimeTemplatePath(): string {
+  const relativeTemplatePath = path.join('templates', 'base', 'src', 'lib', 'realtime.ts');
+  let currentDir = import.meta.dir;
+
+  for (let depth = 0; depth < 8; depth += 1) {
+    const candidate = path.join(currentDir, relativeTemplatePath);
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+
+    const parent = path.dirname(currentDir);
+    if (parent === currentDir) break;
+    currentDir = parent;
+  }
+
+  return path.resolve(import.meta.dir, relativeTemplatePath);
 }
 
 async function ensureZodValidatorInstalled(projectRoot: string): Promise<void> {

@@ -1,4 +1,5 @@
 import type { ServerWebSocket } from 'bun';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
 
 export interface Subscription {
@@ -31,6 +32,12 @@ const messageSchema = z.union([
   z.object({ type: z.literal('subscribe'), table: z.string().min(1).max(255), filter: z.record(z.string(), z.unknown()).optional() }),
   z.object({ type: z.literal('unsubscribe'), table: z.string().min(1).max(255) }),
 ]);
+
+const realtimeTokenPayloadSchema = z.object({
+  sub: z.string().min(1).max(255),
+  claims: z.array(z.string().min(1)).default([]),
+  exp: z.number().int().positive().optional(),
+});
 
 const realtimeLogger = {
   debug: (message: string): void => console.debug(`[realtime] ${message}`),
@@ -76,13 +83,51 @@ export class RealtimeServer {
   authenticate(token: string | undefined): { userId: string; claims: string[] } | null {
     if (!token || !token.trim()) return null;
 
-    // TODO: Replace this placeholder with real auth verification in production:
-    // verify signature/issuer, enforce expiry, and map claims/scopes from your auth provider.
-    const [userId, rawClaims] = token.trim().split(':', 2);
-    if (!userId) return null;
+    const secret = process.env.REALTIME_AUTH_SECRET;
+    if (!secret) {
+      realtimeLogger.warn('Rejecting realtime auth: REALTIME_AUTH_SECRET is not configured');
+      return null;
+    }
 
-    const claims = rawClaims ? rawClaims.split(',').map((claim) => claim.trim()).filter(Boolean) : [];
-    return { userId, claims };
+    const [encodedPayload, signature] = token.trim().split('.', 2);
+    if (!encodedPayload || !signature) {
+      return null;
+    }
+
+    const expectedSignature = createHmac('sha256', secret).update(encodedPayload).digest('hex');
+    const providedSignature = signature.trim();
+    const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+    const providedBuffer = Buffer.from(providedSignature, 'hex');
+    if (expectedBuffer.length === 0 || providedBuffer.length === 0 || expectedBuffer.length !== providedBuffer.length) {
+      return null;
+    }
+
+    if (!timingSafeEqual(expectedBuffer, providedBuffer)) {
+      return null;
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf-8'));
+    } catch {
+      return null;
+    }
+
+    const parsed = realtimeTokenPayloadSchema.safeParse(payload);
+    if (!parsed.success) {
+      return null;
+    }
+
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    if (parsed.data.exp && parsed.data.exp <= nowSeconds) {
+      return null;
+    }
+
+    const claims = parsed.data.claims
+      .map((claim) => claim.trim())
+      .filter((claim) => /^realtime:(\*|[a-zA-Z0-9_:-]+)$/.test(claim));
+
+    return { userId: parsed.data.sub, claims };
   }
 
   authorize(userId: string, claims: string[], table: string): boolean {
