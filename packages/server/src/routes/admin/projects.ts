@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getPool } from "../../lib/db";
+import { projectMetricsRoutes } from "./project-metrics";
 
 export const projectRoutes = new Hono();
 
@@ -65,6 +66,9 @@ projectRoutes.post(
 			[nanoid(), name, slug, adminKeyHash],
 		);
 
+		// Provision project schema
+		await pool.query("SELECT betterbase_meta.provision_project_schema($1)", [slug]);
+
 		// Return admin key plaintext ONCE — not stored, cannot be recovered
 		return c.json({ project: rows[0], admin_key: adminKeyPlaintext }, 201);
 	},
@@ -104,3 +108,6 @@ projectRoutes.delete("/:id", async (c) => {
 	if (rows.length === 0) return c.json({ error: "Not found" }, 404);
 	return c.json({ success: true });
 });
+
+// Mount per-project metrics
+projectRoutes.route("/:projectId/metrics", projectMetricsRoutes);
