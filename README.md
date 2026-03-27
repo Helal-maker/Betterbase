@@ -2,24 +2,13 @@
 
 <div align="center">
 
-<!-- Badges -->
-
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/betterbase/betterbase/actions)
-[![Bun](https://img.shields.io/badge/Bun-v1.2+-red)](https://bun.sh)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org)
-[![Discord](https://img.shields.io/badge/Discord-Join-purple)](https://discord.gg/betterbase)
-[![Twitter](https://img.shields.io/badge/Twitter-Follow-blue)](https://twitter.com/betterbase)
-
-<!-- Tagline -->
-
 **The AI-Native Backend-as-a-Service Platform**
 
 Betterbase is an open-source alternative to Supabase, built with Bun for blazing-fast performance. It provides database, authentication, realtime subscriptions, storage, and serverless functions with sub-100ms local dev using Bun + SQLite.
 
-</div>
+**Last Updated: 2026-03-27**
 
-**Last Updated: 2026-03-26**
+</div>
 
 ---
 
@@ -35,1236 +24,239 @@ Traditional backend development is slow. You spend weeks setting up databases, a
 │  ┌─────────────────┐        ┌────────────────────────────┐    ┌─────────────┐ │
 │  │    Frontend     │        │      Betterbase Core       │    │  Database   │ │
 │  │   (React,       │───────▶│                             │───▶│  (SQLite,   │ │
-│  │    Vue,         │        │  ┌───────┐ ┌───────┐        │    │   Postgres, │ │
-│  │    Mobile)      │        │  │ Auth  │ │Realtime│       │    │   MySQL,    │ │
-│  └─────────────────┘        │  ├───────┤ ├───────┤        │    │   Neon...)  │ │
-│                              │  │Storage │ │GraphQL│        │    └─────────────┘ │
-│  ┌─────────────────┐        │  ├───────┤ ├───────┤        │                     │
-│  │ Serverless      │───────▶│  │  RLS  │ │Vector │        │    ┌─────────────┐ │
-│  │ Functions       │        │  ├───────┤ ├───────┤        │    │  S3 Storage │ │
-│  └─────────────────┘        │  │Branch │ │Logger │        │    │ (R2, B2,    │ │
-│                              │  └───────┘ └───────┘        │    │  MinIO...)  │ │
-│  ┌─────────────────┐        └────────────────────────────┘    └─────────────┘ │
-│  │   Webhooks      │─────────────────────────────────────────▶               │
-│  └─────────────────┘                          │                             │
-│                                                │    ┌─────────────────────┐  │
-│  ┌─────────────────┐                           │    │   External Services │  │
-│  │    Logger       │──────────────────────────┼───▶│   (AI APIs, OAuth)   │  │
-│  └─────────────────┘                           │    └─────────────────────┘  │
-│                                                │                             │
-└────────────────────────────────────────────────┼─────────────────────────────┘
-                                                 │
-                                          (API Responses)
+│  │    Vue,         │        │  Auth │ Realtime │ Storage  │    │   Postgres) │ │
+│  │    Mobile)      │        │  RLS  │ Vector   │ Functions│    └─────────────┘ │
+│  └─────────────────┘        └────────────────────────────┘                     │
+│                                │                                                │
+│                         ┌──────▼──────┐                                         │
+│                         │  IaC Layer  │ (Convex-inspired)                       │
+│                         │  bbf/       │                                         │
+│                         └─────────────┘                                         │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-## Features
-
-Betterbase provides a complete backend solution with enterprise-grade features:
-
-| Feature | Description |
-|---------|-------------|
-| **AI Context Generation** | Automatic `.betterbase-context.json` generation for AI-assisted development |
-| **Sub-100ms Startup** | Lightning-fast local development with `bun:sqlite` |
-| **Docker-less Dev** | Run everything locally without containerization overhead |
-| **TypeScript First** | Full type inference and strict mode throughout |
-| **BetterAuth Integration** | Production-ready authentication out of the box |
-| **Realtime Subscriptions** | WebSocket-based live data updates |
-| **Multi-Provider Support** | PostgreSQL, MySQL (Planetscale), SQLite (Turso), Neon, Supabase |
-| **RLS (Row Level Security)** | Built-in policy engine for fine-grained access control |
-| **Serverless Functions** | Deploy custom API functions |
-| **Storage API** | S3-compatible object storage |
-| **Image Transformations** | On-the-fly image resizing, cropping, and format conversion |
-| **Webhooks** | Event-driven architecture with signed payloads |
-| **Vector Search** | pgvector-powered similarity search with embeddings support |
-| **Branching/Preview Environments** | Create isolated development environments for each branch |
-| **Auto-REST** | Automatic CRUD route generation from Drizzle schema |
-| **GraphQL** | GraphQL API with schema generation and subscriptions |
-| **Magic Link Auth** | Passwordless authentication via email magic links |
-| **MFA** | Multi-factor authentication support |
-| **Phone Auth** | Phone number verification via SMS/OTP |
-| **Project Templates** | Base and Auth templates for quick project initialization |
-| **Request Logging** | Built-in request logging with file transport |
 
 ---
 
 ## Quick Start
 
-### Installation
-
-Install the Betterbase CLI globally:
-
 ```bash
+# Install CLI
 bun install -g @betterbase/cli
+
+# Create a new project (IaC mode - recommended)
+bb init my-app
+cd my-app
+bun install
+bb dev
 ```
 
-Verify installation:
-
-```bash
-bb --version
-```
-
-### Initialize a New Project
-
-Create a new Betterbase project:
-
-```bash
-bb init my-project
-cd my-project
-```
-
-This creates the following structure:
+Your project structure:
 
 ```
-my-project/
-├── betterbase.config.ts
-├── drizzle.config.ts
-├── src/
-│   ├── db/
-│   │   ├── schema.ts
-│   │   └── migrate.ts
-│   ├── functions/
-│   ├── auth/
-│   └── routes/
+my-app/
+├── bbf/
+│   ├── schema.ts         # Define tables (Convex-style)
+│   ├── queries/          # Read functions (auto-subscribe)
+│   ├── mutations/        # Write functions (transactions)
+│   └── actions/          # Side-effects (scheduled, HTTP)
+├── betterbase.config.ts  # Optional config
 └── package.json
-```
-
-### Configure Your Database
-
-Edit `betterbase.config.ts`:
-
-```typescript
-import { defineConfig } from '@betterbase/core'
-
-export default defineConfig({
-  database: {
-    provider: 'sqlite', // or 'postgres', 'mysql', 'neon', 'turso', 'planetscale'
-    connectionString: process.env.DATABASE_URL || 'file:./dev.db'
-  },
-  auth: {
-    providers: ['email', 'github', 'google'],
-    sessionExpiry: 7 * 24 * 60 * 60 * 1000 // 7 days
-  },
-  storage: {
-    provider: 'local', // or 's3'
-    bucket: 'uploads'
-  },
-  graphql: {
-    enabled: true,
-    playground: true
-  }
-})
 ```
 
 ### Define Your Schema
 
-Edit `src/db/schema.ts`:
+Edit `bbf/schema.ts`:
 
 ```typescript
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
-import { relations } from 'drizzle-orm'
+import { defineSchema, defineTable, v } from "@betterbase/core/iac"
 
-export const users = sqliteTable('users', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).default(new Date())
+export const schema = defineSchema({
+  users: defineTable({
+    name: v.string(),
+    email: v.string(),
+  }).uniqueIndex("by_email", ["email"]),
+  
+  posts: defineTable({
+    title: v.string(),
+    content: v.string(),
+    published: v.boolean(),
+    authorId: v.id("users"),
+  }).index("by_author", ["authorId"]),
 })
-
-export const posts = sqliteTable('posts', {
-  id: text('id').primaryKey(),
-  title: text('title').notNull(),
-  content: text('content'),
-  userId: text('user_id').references(() => users.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).default(new Date())
-})
-
-export const usersRelations = relations(users, ({ many }) => ({
-  posts: many(posts)
-}))
-
-export const postsRelations = relations(posts, ({ one }) => ({
-  user: one(users, {
-    fields: [posts.userId],
-    references: [users.id]
-  })
-}))
 ```
 
-### Run the Development Server
+### Write Functions
+
+```typescript
+// bbf/queries/posts.ts
+import { query } from "@betterbase/core/iac"
+
+export const listPosts = query({
+  args: { published: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    return ctx.db.query("posts")
+      .filter("published", "eq", args.published ?? true)
+      .order("desc")
+      .take(50)
+  },
+})
+```
+
+```typescript
+// bbf/mutations/posts.ts
+import { mutation } from "@betterbase/core/iac"
+
+export const createPost = mutation({
+  args: {
+    title: v.string(),
+    content: v.string(),
+    authorId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    return ctx.db.insert("posts", {
+      ...args,
+      published: false,
+    })
+  },
+})
+```
+
+### Run
 
 ```bash
 bb dev
 ```
 
-Your backend is now running at `http://localhost:3000`:
-
-| Endpoint | Description |
-|----------|-------------|
-| `http://localhost:3000` | API root |
-| `http://localhost:3000/rest/v1/*` | REST API |
-| `http://localhost:3000/graphql` | GraphQL playground |
-| `http://localhost:3000/api/auth/*` | Authentication endpoints |
-| `http://localhost:3000/storage/*` | Storage endpoints |
-| `http://localhost:3000/realtime/*` | Realtime subscriptions |
+Your backend runs at `http://localhost:3000`. The dashboard is at `http://localhost:3001`.
 
 ---
 
-## Templates
+## BetterBase vs Convex
 
-BetterBase provides project templates for quick project initialization:
+| Feature | Convex | BetterBase |
+|---------|--------|------------|
+| Database | Black box | Full PostgreSQL |
+| Raw SQL | Not available | `ctx.db.execute()` |
+| Full-Text Search | Not built-in | PostgreSQL FTS |
+| Vector Search | Limited | pgvector + HNSW |
+| Self-Hosting | Not supported | Docker to your infra |
+| Migration | — | `bb migrate from-convex` |
 
-### Base Template
-
-The base template includes essential project structure:
-
-```bash
-bb init my-project --template base
-```
-
-**Includes:**
-- Basic Hono server setup
-- Database schema with users table
-- Authentication middleware
-- Storage routes
-- Health check endpoint
-
-### Auth Template
-
-The authentication template includes full BetterAuth integration:
-
-```bash
-bb init my-project --template auth
-```
-
-**Includes:**
-- Pre-configured BetterAuth setup
-- Email/password authentication
-- Social OAuth providers (configurable)
-- Session management
-- Auth middleware examples
+**BetterBase gives you Convex simplicity with full SQL power.**
 
 ---
 
-## Architecture Overview
+## Features
 
-### System Design
-
-```
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                              CLIENT LAYER                                       │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐   │
-│  │   Web SDK   │    │ React Hooks  │    │   Mobile    │    │  GraphQL   │   │
-│  │@betterbase  │    │ @betterbase  │    │    SDK      │    │   Client   │   │
-│  │   /client   │    │   /client    │    │             │    │            │   │
-│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘   │
-└─────────┼──────────────────┼──────────────────┼──────────────────┼──────────┘
-          │                  │                  │                  │
-          ▼                  ▼                  ▼                  ▼
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                          API GATEWAY (Hono)                                    │
-│  ┌──────────┐ ┌──────────┐ ┌────────┐ ┌─────────┐ ┌──────────┐ ┌──────────┐   │
-│  │ REST API │ │ GraphQL  │ │  Auth  │ │ Storage │ │ Realtime │ │ Webhooks │   │
-│  └────┬─────┘ └────┬─────┘ └────┬───┘ └────┬────┘ └────┬─────┘ └────┬─────┘   │
-└───────┼────────────┼────────────┼──────────┼────────────┼────────────┼────────┘
-        │            │            │          │            │            │
-        ▼            ▼            ▼          ▼            ▼            ▼
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                         CORE SERVICES LAYER                                     │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │  Query   │ │   Auth   │ │ Realtime │ │ Storage  │ │ Function │ │ Webhook  │  │
-│  │  Engine  │ │ Service  │ │ Service  │ │ Service  │ │ Runtime  │ │ Dispatch │  │
-│  │(Drizzle) │ │(Better   │ │(WebSocket│ │   (S3)   │ │   (Bun)  │ │          │  │
-│  │          │ │  Auth)   │ │)        │ │          │ │          │ │          │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
-│       │            │            │            │            │            │        │
-│       └────────────┴────────────┴────────────┴────────────┴────────────┘        │
-│                                     │                                             │
-└─────────────────────────────────────┼────────────────────────────────────────────┘
-                                      ▼
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                            DATA LAYER                                            │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│  │  SQLite  │ │PostgreSQL│ │  MySQL   │ │  Neon    │ │  Turso   │ │ Supabase │  │
-│  │  (dev)   │ │          │ │          │ │(serverless│ │ (libSQL)  │ │          │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │
-└────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Package Architecture
-
-```
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                         TURBOREPO MONOREPO                                     │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │                        @betterbase/cli                                    │ │
-│  │  CLI tool with 21 commands for development and deployment               │ │
-│  │  init, dev, migrate, auth, auth add-provider, generate, function,       │ │
-│  │  graphql, login, rls, rls test, storage, webhook, branch               │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │                        @betterbase/client                                │ │
-│  │  TypeScript SDK for frontend integration                                 │ │
-│  │  Auth, Query Builder, Realtime, Storage, Errors                         │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │                        @betterbase/core                                   │ │
-│  │  Core backend engine with all server-side functionality                │ │
-│  │  Database, Auth, GraphQL, RLS, Storage, Webhooks, Functions,           │ │
-│  │  Vector Search, Branching, Auto-REST, Logger, Realtime                  │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │                        @betterbase/shared                                │ │
-│  │  Shared utilities, types, and constants across all packages            │ │
-│  │  Types, Errors, Constants, Utils                                         │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │                        @betterbase/server                                 │ │
-│  │  Self-hosted server with admin API and device authentication            │ │
-│  │  Admin routes, metrics, project management, storage, webhooks           │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │                        templates/                                        │ │
-│  │  Project templates for quick initialization                             │ │
-│  │  base, auth                                                             │ │
-│  └──────────────────────────────────────────────────────────────────────────┘ │
-│                                                                                │
-│  ┌──────────────────────────────────────────────────────────────────────────┐ │
-│  │                        apps/dashboard                                    │ │
-│  │  React admin dashboard for self-hosted management                      │ │
-│  │  Projects, metrics, storage, webhooks, functions, settings             │ │
-└────────────────────────────────────────────────────────────────────────────────┘
-```
+| Feature | Description |
+|---------|-------------|
+| **IaC Layer** | Convex-inspired: define schema + functions in TypeScript |
+| **Auto-Realtime** | Queries auto-subscribe to changes |
+| **Type Safety** | Full TypeScript inference, no code generation needed |
+| **Migrations** | Automatic diff + apply on `bb dev` |
+| **Raw SQL** | `ctx.db.execute()` for complex queries |
+| **Full-Text Search** | PostgreSQL GIN indexes via `ctx.db.search()` |
+| **Vector Search** | pgvector + HNSW for embeddings |
+| **Serverless Functions** | Deploy custom API functions |
+| **Storage** | S3-compatible object storage |
+| **Webhooks** | Event-driven with signed payloads |
+| **RLS** | Row-level security policies |
+| **Branching** | Preview environments per branch |
 
 ---
 
-## Technology Stack
+## Project Structure
 
-| Technology | Purpose | Why |
-|------------|---------|-----|
-| **Bun** | Runtime | 3x faster than Node.js, native TypeScript support, built-in bundler |
-| **Hono** | Web Framework | Fast, lightweight, works on any runtime (Cloudflare Workers, Deno, Bun) |
-| **Drizzle ORM** | Database | Type-safe, lightweight, SQL-like syntax, migrations built-in |
-| **BetterAuth** | Authentication | Extensible, secure, 30+ providers, session management |
-| **Pothos + graphql-yoga** | GraphQL | Type-safe GraphQL schema builder with modern features |
-| **Turborepo** | Monorepo | Efficient caching, parallel builds, remote caching |
-| **AWS S3 SDK** | Storage | Industry-standard object storage compatibility |
-| **Zod** | Validation | TypeScript-first schema validation |
+BetterBase supports two patterns:
 
-### Configuration Options
+### 1. IaC Pattern (Recommended)
 
-BetterBase can be configured using `betterbase.config.ts`:
-
-```typescript
-import { defineConfig } from '@betterbase/core';
-
-export default defineConfig({
-  // Auto-REST: Automatic CRUD route generation
-  autoRest: {
-    enabled: true,
-    excludeTables: ['internal_logs', 'migrations'],
-  },
-  
-  // Storage policies for access control
-  storage: {
-    policies: [
-      {
-        bucket: 'avatars',
-        operation: 'upload',
-        expression: 'auth.uid() != null', // Allow authenticated users
-      },
-      {
-        bucket: 'avatars',
-        operation: 'download',
-        expression: 'true', // Allow public read
-      },
-    ],
-  },
-  
-  // Branching: Preview Environments configuration
-  branching: {
-    enabled: true,
-    maxPreviews: 10,
-    defaultSleepTimeout: 3600, // seconds
-  },
-  
-  // Vector search configuration
-  vector: {
-    enabled: true,
-    provider: 'openai',
-    model: 'text-embedding-3-small',
-    dimensions: 1536,
-  },
-});
+```
+my-app/
+├── bbf/
+│   ├── schema.ts         # defineSchema() + defineTable()
+│   ├── queries/          # query() functions
+│   ├── mutations/        # mutation() functions
+│   ├── actions/          # action() functions
+│   └── cron.ts          # scheduled functions
+├── betterbase.config.ts  # Optional config
+└── package.json
 ```
 
-### Environment Variables
+### 2. Original Pattern (Advanced)
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `3000` |
-| `NODE_ENV` | Environment (development/production) | `development` |
-| `DB_PATH` | SQLite database path | `local.db` |
-| `DATABASE_URL` | PostgreSQL/MySQL connection string | — |
-| `STORAGE_PROVIDER` | Storage provider (s3, r2, backblaze, minio) | `s3` |
-| `STORAGE_BUCKET` | Default storage bucket name | `storage` |
-| `STORAGE_ALLOWED_MIME_TYPES` | Comma-separated allowed MIME types | — |
-| `STORAGE_MAX_FILE_SIZE` | Maximum file size in bytes | 10485760 |
-| `SMTP_HOST` | SMTP server host | — |
-| `SMTP_PORT` | SMTP server port | 587 |
-| `SMTP_USER` | SMTP username | — |
-| `SMTP_PASS` | SMTP password | — |
-| `SMTP_FROM` | SMTP from email address | — |
-| `TWILIO_ACCOUNT_SID` | Twilio Account SID | — |
-| `TWILIO_AUTH_TOKEN` | Twilio Auth Token | — |
-| `TWILIO_PHONE_NUMBER` | Twilio phone number | — |
+```
+my-app/
+├── src/
+│   ├── db/
+│   │   ├── schema.ts     # Drizzle schema
+│   │   └── migrate.ts    # Migration runner
+│   ├── routes/           # Hono routes
+│   └── functions/       # Serverless functions
+├── betterbase.config.ts
+└── package.json
+```
+
+Both patterns work together. Add `bbf/` to any existing project.
 
 ---
 
 ## CLI Reference
 
-The Betterbase CLI (`bb`) provides 21 commands for development and deployment:
-
-### Core Commands
-
-#### `bb init [name]`
-
-Initialize a new Betterbase project.
-
-```bash
-# Create in current directory
-bb init
-
-# Create in specific directory
-bb init my-project
-
-# With template
-bb init my-project --template auth
-```
-
-#### `bb dev`
-
-Start the development server with hot reload.
-
-```bash
-# Default port (3000)
-bb dev
-
-# Custom port
-bb dev --port 8080
-
-# With specific config
-bb dev --config production.config.ts
-```
-
-#### `bb migrate`
-
-Run database migrations.
-
-```bash
-# Generate and apply migrations
-bb migrate
-
-# Preview migration diff without applying
-bb migrate preview
-
-# Apply migrations to production
-bb migrate production
-
-# Rollback the last migration
-bb migrate rollback
-
-# Show migration history
-bb migrate history
-```
-
-### Authentication
-
-#### `bb auth setup`
-
-Setup and configure BetterAuth.
-
-```bash
-# Setup authentication
-bb auth setup
-```
-
-#### `bb auth add-provider`
-
-Add OAuth provider to your project.
-
-```bash
-# Add OAuth provider
-bb auth add-provider github
-
-# Available providers: google, github, discord, apple, microsoft, twitter, facebook
-bb auth add-provider google
-bb auth add-provider discord
-```
-
-### Code Generation
-
-#### `bb generate`
-
-Generate types, CRUD operations, and more.
-
-```bash
-# Generate TypeScript types
-bb generate types
-
-# Generate CRUD operations
-bb generate crud
-
-# Generate everything
-bb generate all
-```
-
-### GraphQL
-
-#### `bb graphql`
-
-GraphQL schema management.
-
-```bash
-# Generate GraphQL schema from database
-bb graphql generate
-
-# Open GraphQL Playground
-bb graphql playground
-
-# Export schema as SDL
-bb graphql export
-```
-
-### RLS (Row Level Security)
-
-#### `bb rls`
-
-Manage Row Level Security policies.
-
-```bash
-# Create new RLS policy
-bb rls create --table posts --name users-own-posts --command SELECT
-
-# List all RLS policies
-bb rls list
-
-# Disable RLS for a table
-bb rls disable --table posts
-
-# Enable RLS for a table
-bb rls enable --table posts
-
-# Test RLS policies
-bb rls test --table posts
-```
-
-### Storage
-
-#### `bb storage`
-
-Manage file storage.
-
-```bash
-# Initialize storage
-bb storage init
-
-# List buckets
-bb storage list
-
-# List objects in bucket
-bb storage buckets avatars
-
-# Upload file
-bb storage upload avatars avatar.png
-```
-
-### Webhooks
-
-#### `bb webhook`
-
-Manage webhooks.
-
-```bash
-# Create webhook
-bb webhook create --url https://example.com/hook --events "insert,update,delete"
-
-# List webhooks
-bb webhook list
-
-# Test webhook
-bb webhook test my-webhook
-
-# View webhook logs
-bb webhook logs my-webhook
-```
-
-### Serverless Functions
-
-#### `bb function`
-
-Manage serverless functions.
-
-```bash
-# Create new function
-bb function create my-function
-
-# Run function in development mode
-bb function dev my-function
-
-# Build function
-bb function build my-function
-
-# Deploy function
-bb function deploy my-function
-
-# List all functions
-bb function list
-
-# View function logs
-bb function logs my-function
-```
-
-### Branching (Preview Environments)
-
-#### `bb branch`
-
-Manage preview environments (branches) for isolated development.
-
-```bash
-# Create a new preview environment
-bb branch create my-feature
-
-# List all preview environments
-bb branch list
-
-# Delete a preview environment
-bb branch delete my-feature
-
-# Check branch status
-bb branch status my-feature
-
-# Wake a sleeping preview
-bb branch wake my-feature
-
-# Sleep a preview to save resources
-bb branch sleep my-feature
-```
-
-### Authentication (User Management)
-
-#### `bb login`
-
-Manage user authentication.
-
-```bash
-# Login user
-bb login --email user@example.com
-
-# Logout user
-bb logout
-
-# Get current session
-bb login status
-```
+| Command | Description |
+|---------|-------------|
+| `bb init [name]` | Create new project |
+| `bb dev` | Start dev server |
+| `bb iac sync` | Sync IaC schema |
+| `bb iac analyze` | Analyze query performance |
+| `bb migrate` | Run migrations |
+| `bb generate types` | Generate TypeScript types |
 
 ---
 
 ## Client SDK
 
-Install the client SDK:
-
 ```bash
 bun add @betterbase/client
 ```
-
-### Initialization
 
 ```typescript
 import { createClient } from '@betterbase/client'
 
 const client = createClient({
   baseUrl: 'http://localhost:3000',
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true
-  }
-})
-```
-
-### Authentication
-
-#### Sign Up
-
-```typescript
-const { data, error } = await client.auth.signUp({
-  email: 'user@example.com',
-  password: 'secure-password',
-  name: 'John Doe'
 })
 
-if (error) {
-  console.error('Signup failed:', error.message)
-} else {
-  console.log('User created:', data.user)
-}
-```
+// Use IaC functions
+const { data: posts } = await client.bff.queries.posts.listPosts({})
 
-#### Sign In
-
-```typescript
-const { data, error } = await client.auth.signInWithPassword({
-  email: 'user@example.com',
-  password: 'secure-password'
+// Mutations
+await client.bff.mutations.posts.createPost({
+  title: 'Hello',
+  content: 'World',
+  authorId: 'user-123',
 })
-
-if (error) {
-  console.error('Login failed:', error.message)
-} else {
-  console.log('Logged in:', data.session)
-}
-```
-
-#### Sign In with Provider
-
-```typescript
-// GitHub OAuth
-const { data, error } = await client.auth.signInWithOAuth({
-  provider: 'github'
-})
-
-// Google OAuth
-const { data, error } = await client.auth.signInWithOAuth({
-  provider: 'google'
-})
-```
-
-#### Sign Out
-
-```typescript
-await client.auth.signOut()
-```
-
-#### Get Current User
-
-```typescript
-const { data: { user }, error } = await client.auth.getUser()
-
-if (user) {
-  console.log('Current user:', user)
-}
-```
-
-### Query Builder
-
-#### Select
-
-```typescript
-// Get all posts
-const { data: posts, error } = await client
-  .from('posts')
-  .select()
-
-// Select with filters
-const { data: posts, error } = await client
-  .from('posts')
-  .select('id, title, content, user:users(name)')
-  .eq('published', true)
-  .order('createdAt', { ascending: false })
-  .limit(10)
-
-// Single record
-const { data: post, error } = await client
-  .from('posts')
-  .select()
-  .eq('id', 'post-123')
-  .single()
-```
-
-#### Insert
-
-```typescript
-const { data, error } = await client
-  .from('posts')
-  .insert({
-    title: 'My New Post',
-    content: 'Post content here',
-    userId: 'user-123'
-  })
-```
-
-#### Update
-
-```typescript
-const { data, error } = await client
-  .from('posts')
-  .update({
-    title: 'Updated Title'
-  })
-  .eq('id', 'post-123')
-```
-
-### Realtime Subscriptions
-
-```typescript
-// Subscribe to table changes
-const channel = client.channel('public:posts')
-
-channel
-  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, 
-    (payload) => {
-      console.log('New post:', payload.new)
-    }
-  )
-  .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' },
-    (payload) => {
-      console.log('Updated post:', payload.new)
-    }
-  )
-  .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' },
-    (payload) => {
-      console.log('Deleted post:', payload.old)
-    }
-  )
-  .subscribe()
-
-// Unsubscribe when done
-channel.unsubscribe()
-```
-
-### Storage
-
-#### Upload File
-
-```typescript
-const { data, error } = await client
-  .storage
-  .upload('avatars', 'user-avatar.png', file)
-```
-
-#### Download File
-
-```typescript
-const { data, error } = await client
-  .storage
-  .download('avatars', 'user-avatar.png')
-```
-
-#### Get Public URL
-
-```typescript
-const { data: { url } } = client
-  .storage
-  .getPublicUrl('avatars', 'user-avatar.png')
-```
-
-#### Delete File
-
-```typescript
-await client
-  .storage
-  .remove('avatars', 'user-avatar.png')
 ```
 
 ---
 
-## Deployment Options
+## Deployment
 
-### Local Development
-
-The easiest way to get started:
+### Local
 
 ```bash
-bb init my-project
-cd my-project
 bb dev
-```
-
-Uses SQLite by default for zero-configuration development.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/signup` | Register new user |
-| `POST` | `/api/auth/signin` | Sign in user |
-| `POST` | `/api/auth/signout` | Sign out user |
-| `GET` | `/api/auth/session` | Get current session |
-| `POST` | `/api/auth/refresh` | Refresh session |
-| `POST` | `/api/auth/magic-link` | Send magic link email |
-| `GET` | `/api/auth/magic-link/verify` | Verify magic link |
-| `POST` | `/api/auth/otp/send` | Send OTP |
-| `POST` | `/api/auth/otp/verify` | Verify OTP |
-| `POST` | `/api/auth/mfa/enable` | Enable MFA |
-| `POST` | `/api/auth/mfa/verify` | Verify MFA |
-| `POST` | `/api/auth/mfa/disable` | Disable MFA |
-| `POST` | `/api/auth/mfa/challenge` | MFA challenge |
-| `POST` | `/api/auth/phone/send` | Send SMS verification |
-| `POST` | `/api/auth/phone/verify` | Verify SMS code |
-
-#### Auto-REST (Automatic CRUD)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/:table` | List all records (paginated) |
-| `GET` | `/api/:table/:id` | Get single record by ID |
-| `POST` | `/api/:table` | Create new record |
-| `PATCH` | `/api/:table/:id` | Update record |
-| `DELETE` | `/api/:table/:id` | Delete record |
-
-Deploy to any Bun-compatible host:
-
-```bash
-# Build for production
-bun run build
-
-# Start production server
-bun run start
 ```
 
 ### Docker
 
-Betterbase includes production-ready Docker configuration for self-hosted deployment.
-
-#### Quick Start with Docker Compose
-
 ```bash
-# Start development environment with PostgreSQL
 docker-compose up -d
-
-# View logs
-docker-compose logs -f app
-
-# Stop services
-docker-compose down
 ```
 
-#### Docker Files Included
+### Self-Hosted
 
-| File | Purpose |
-|------|---------|
-| `Dockerfile` | Monorepo build (for developing Betterbase itself) |
-| `Dockerfile.project` | Project template for deploying user projects |
-| `docker-compose.yml` | Development environment with PostgreSQL |
-| `docker-compose.production.yml` | Production-ready configuration |
-| `.env.example` | Environment variable template |
-
-#### Building a Project
-
-```bash
-# Copy the project Dockerfile to your project root
-cp Dockerfile.project ./Dockerfile
-
-# Configure environment variables
-cp .env.example .env
-# Edit .env with your database and storage settings
-
-# Build and run
-docker build -t my-betterbase-app .
-docker run -p 3000:3000 my-betterbase-app
-```
-
-#### Production Deployment
-
-```bash
-# Use production compose file
-docker-compose -f docker-compose.production.yml up -d
-
-# With external database (Neon, Supabase, RDS)
-DATABASE_URL=postgres://... docker-compose -f docker-compose.production.yml up -d
-
-# With Cloudflare R2 storage
-STORAGE_PROVIDER=r2 STORAGE_BUCKET=my-bucket docker-compose -f docker-compose.production.yml up -d
-```
-
-#### Docker Features
-
-- **Multi-stage builds** for minimal image size
-- **PostgreSQL** included in dev environment
-- **Health checks** for reliability
-- **Non-root user** for security
-- **Volume mounts** for hot-reload in development
-- **External database support** - Neon, Supabase, RDS, etc.
-- **S3-compatible storage** - R2, S3, B2, MinIO
-
-### Self-Hosted Deployment
-
-Betterbase can be self-hosted on your own infrastructure using Docker. This is ideal for teams wanting full control over their data and infrastructure.
-
-#### Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/betterbase/betterbase.git
-cd betterbase
-
-# Start self-hosted deployment
-docker-compose -f docker-compose.self-hosted.yml up -d
-```
-
-The self-hosted version includes:
-- **Admin Dashboard** - Web UI for managing projects, users, and settings
-- **Device Authentication** - CLI login flow for self-hosted instances
-- **Admin API** - Full API for administrative tasks
-- **Metrics** - Usage and performance tracking
-
-#### Configuration
-
-Copy the example environment file and configure:
-
-```bash
-cp .env.self-hosted.example .env
-```
-
-Key environment variables:
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `AUTH_SECRET` | Secret for auth tokens (min 32 chars) | Yes |
-| `SERVER_URL` | Public URL of your instance | Yes |
-| `ADMIN_EMAIL` | Initial admin email | Yes |
-| `ADMIN_PASSWORD` | Initial admin password | Yes |
-| `STORAGE_PROVIDER` | Storage provider (local, s3, r2, backblaze, minio) | No |
-| `STORAGE_BUCKET` | Storage bucket name | No |
-
-#### CLI Login with Self-Hosted
-
-```bash
-# Login to your self-hosted instance
-bb login --url https://your-instance.com
-
-# This will initiate device authentication flow
-# 1. You'll be given a device code
-# 2. Open the admin dashboard
-# 3. Approve the device
-# 4. CLI will receive credentials automatically
-```
-
-#### Docker Compose Services
-
-| Service | Port | Description |
-|---------|------|-------------|
-| server | 3000 | Main API server |
-| dashboard | 3001 | Admin dashboard |
-| nginx | 80, 443 | Reverse proxy |
-
-#### For Development
-
-```bash
-# Start all services
-docker-compose -f docker-compose.self-hosted.yml up
-
-# View logs
-docker-compose -f docker-compose.self-hosted.yml logs -f
-
-# Stop services
-docker-compose -f docker-compose.self-hosted.yml down
-```
-
-See [SELF_HOSTED.md](SELF_HOSTED.md) for detailed documentation.
-
-### Self-Hosted Architecture
-
-```
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                         SELF-HOSTED DEPLOYMENT                                 │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │                      External Clients                                     │ │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │ │
-│  │  │  Web App    │  │  CLI (bb)   │  │   Mobile    │  │ Dashboard   │   │ │
-│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘   │ │
-│  └─────────┼────────────────┼────────────────┼────────────────┼──────────┘ │
-│            │                │                │                │               │
-│            ▼                ▼                ▼                ▼               │
-│  ┌─────────────────────────────────────────────────────────────────────────┐ │
-│  │                        NGINX Reverse Proxy                              │ │
-│  │                   (docker/nginx/nginx.conf)                            │ │
-│  └────────────────────────────────┬────────────────────────────────────────┘ │
-│                                   │                                            │
-│           ┌───────────────────────┼───────────────────────┐                   │
-│           │                       │                       │                   │
-│           ▼                       ▼                       ▼                   │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐           │
-│  │   Dashboard     │    │     Server      │    │     Server      │           │
-│  │  (React App)    │    │  (@betterbase   │    │  (Project API)  │           │
-│  │  Port: 3001     │    │   /server)      │    │   Port: 3000    │           │
-│  │                 │    │  Port: 3000     │    │                 │           │
-│  └─────────────────┘    └────────┬────────┘    └────────┬────────┘           │
-│                                   │                       │                    │
-│                                   └───────────┬───────────┘                    │
-│                                               │                                │
-│                                               ▼                                │
-│                                    ┌─────────────────────┐                    │
-│                                    │    PostgreSQL       │                    │
-│                                    │    (Database)       │                    │
-│                                    └─────────────────────┘                    │
-└────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Cloud Providers
-
-| Provider | Deployment Method |
-|----------|-------------------|
-| **Railway** | `bb deploy` or Docker |
-| **Render** | Docker |
-| **Fly.io** | Docker |
-| **Vercel** | Edge Functions |
-| **AWS Lambda** | Serverless Framework |
-| **Cloudflare Workers** | `wrangler` |
-
----
-
-## Configuration
-
-### betterbase.config.ts
-
-```typescript
-import { defineConfig } from '@betterbase/core'
-
-export default defineConfig({
-  // Database configuration
-  database: {
-    provider: 'sqlite',
-    connectionString: process.env.DATABASE_URL || 'file:./dev.db',
-    // For connection pooling (PostgreSQL)
-    pool: {
-      min: 2,
-      max: 10
-    }
-  },
-
-  // Authentication
-  auth: {
-    providers: ['email', 'github', 'google', 'discord'],
-    email: {
-      confirmEmail: true,
-      passwordMinLength: 8
-    },
-    session: {
-      expiry: 7 * 24 * 60 * 60 * 1000, // 7 days
-      refreshTokenExpiry: 30 * 24 * 60 * 60 * 1000 // 30 days
-    }
-  },
-
-  // Storage
-  storage: {
-    provider: 'local', // or 's3'
-    local: {
-      path: './storage'
-    },
-    s3: {
-      bucket: process.env.S3_BUCKET,
-      region: process.env.AWS_REGION,
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    },
-    // File size limits (bytes)
-    maxFileSize: 10 * 1024 * 1024, // 10MB
-    allowedMimeTypes: ['image/*', 'application/pdf']
-  },
-
-  // GraphQL
-  graphql: {
-    enabled: true,
-    playground: process.env.NODE_ENV !== 'production',
-    depthLimit: 10,
-    costLimit: 1000
-  },
-
-  // API Configuration
-  api: {
-    port: parseInt(process.env.PORT || '3000'),
-    host: process.env.HOST || '0.0.0.0',
-    cors: {
-      origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
-      credentials: true
-    }
-  },
-
-  // Row Level Security
-  rls: {
-    enabled: true,
-    auditLog: true
-  },
-
-  // Webhooks
-  webhooks: {
-    retry: {
-      maxAttempts: 3,
-      retryInterval: 1000
-    }
-  }
-})
-```
-
-### Environment Variables
-
-```bash
-# Database
-DATABASE_URL=file:./dev.db
-# Or for PostgreSQL
-DATABASE_URL=postgres://user:password@localhost:5432/mydb
-
-# Auth
-AUTH_SECRET=your-secret-key-min-32-chars-long
-AUTH_URL=http://localhost:3000
-
-# Storage (S3)
-STORAGE_PROVIDER=s3
-STORAGE_REGION=us-east-1
-STORAGE_ACCESS_KEY_ID=your-access-key
-STORAGE_SECRET_ACCESS_KEY=your-secret-key
-STORAGE_BUCKET=my-bucket
-
-# API
-PORT=3000
-HOST=0.0.0.0
-NODE_ENV=development
-
-# CORS
-CORS_ORIGIN=http://localhost:3000,http://localhost:5173
-```
-
----
-
-## Database Providers
-
-Betterbase supports multiple database providers for different use cases:
-
-### SQLite (Development)
-
-Best for local development. Zero configuration required.
-
-```typescript
-database: {
-  provider: 'sqlite',
-  connectionString: 'file:./dev.db'
-}
-```
-
-### PostgreSQL (Production)
-
-Best for production deployments requiring full SQL capabilities.
-
-```typescript
-database: {
-  provider: 'postgres',
-  connectionString: process.env.DATABASE_URL
-}
-```
-
-### Neon (Serverless PostgreSQL)
-
-Best for serverless applications with automatic scaling.
+See [SELF_HOSTED.md](SELF_HOSTED.md) for full documentation.
 
 ```typescript
 database: {

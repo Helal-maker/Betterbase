@@ -1,97 +1,143 @@
-# BetterBase — Complete Codebase Map
+# BetterBase — Codebase Map
 
-> Last updated: 2026-03-26
+> Last updated: 2026-03-27
 
-## Project Identity
+## What is BetterBase?
 
-**BetterBase** is an AI-native Backend-as-a-Service (BaaS) platform built with Bun that provides a TypeScript-first developer experience. It includes database management via Drizzle ORM, authentication via BetterAuth, realtime subscriptions, S3-compatible storage, and serverless functions. The platform is designed with a focus on AI context generation, Docker-less local development, and zero vendor lock-in.
-
----
-
-## Technology Stack
-
-| Layer | Technology | Rationale |
-|-------|------------|-----------|
-| **Runtime** | Bun | Fast startup (<100ms), native TypeScript support, built-in package manager |
-| **Monorepo** | Turborepo | Efficient caching, parallel execution, workspace management |
-| **API Framework** | Hono | Lightweight, fast, edge-compatible, middleware-based |
-| **Database ORM** | Drizzle ORM | Type-safe, SQL-like syntax, lightweight, migrations support |
-| **Database Providers** | PostgreSQL, MySQL, SQLite | Multiple provider support (Neon, PlanetScale, Supabase, Turso) |
-| **Authentication** | BetterAuth | TypeScript-first, extensible, AI-friendly context |
-| **Validation** | Zod | Schema validation, TypeScript inference |
-| **Storage** | S3-compatible | Universal storage interface (AWS S3, MinIO, etc.) |
+AI-native Backend-as-a-Service platform built with Bun. Define your backend in TypeScript using the Convex-inspired IaC layer, or use traditional Drizzle + Hono patterns.
 
 ---
 
-## Tech Stack Overview
+## Quick Start
 
-| Layer | Technologies |
-|-------|--------------|
-| **Runtime** | Bun 1.x, Node.js (Bun-compatible) |
-| **API Framework** | Hono.js (lightweight, fast, composable) |
-| **Database** | Drizzle ORM (SQL abstraction), SQLite (local), PostgreSQL (Neon/Supabase), MySQL (PlanetScale), libSQL (Turso) |
-| **Authentication** | BetterAuth (password, social) |
-| **Storage** | AWS S3, Cloudflare R2, Backblaze B2, MinIO |
-| **Realtime** | WebSockets (Bun server) |
-| **GraphQL** | graphql-yoga (server), GraphQL.js (schema) |
-| **Validation** | Zod (schema validation) |
-| **Build Tool** | Turbo (monorepo), Bun build |
-| **CLI** | Commander.js |
-
----
-
-## Monorepo Structure Overview
-
-```mermaid
-graph TB
-    subgraph Root
-        Root[pkgjson<br/>turbojson<br/>tsconfigbasjson]
-    end
-    
-    subgraph packages
-        CLI[packages/cli<br/>21 commands<br/>8 utils]
-        Client[packages/client<br/>9 modules]
-        Core[packages/core<br/>14 modules]
-        Shared[packages/shared<br/>5 modules]
-        Server[packages/server<br/>Self-hosted API]
-    end
-    
-    subgraph apps
-        Dashboard[apps/dashboard<br/>Admin Dashboard]
-        TestProject[apps/test-project<br/>Example project]
-    end
-    
-    subgraph templates
-        Base[templates/base<br/>Base template]
-        Auth[templates/auth<br/>Auth template]
-    end
-    
-    subgraph external
-        CliAuth[cli-auth-page<br/>Auth UI]
-        Docker[docker/<br/>Nginx config]
-    end
-    
-    subgraph infrastructure
-        DB[(Database<br/>PostgreSQL<br/>MySQL<br/>SQLite)]
-        S3[(S3 Storage<br/>R2, B2, MinIO)]
-    end
-    
-    Root --> CLI
-    Root --> Client
-    Root --> Core
-    Root --> Shared
-    Root --> Server
-    Root --> Dashboard
-    Root --> TestProject
-    Root --> Base
-    Root --> Auth
-    
-    CLI -->|commands| Core
-    Core -->|queries| DB
-    Core -->|files| S3
-    Dashboard -->|admin| Server
-    Server -->|projects| DB
+```bash
+bun install -g @betterbase/cli
+bb init my-app
+cd my-app
+bun install
+bb dev
 ```
+
+---
+
+## Project Structure
+
+### IaC Pattern (Recommended)
+
+```
+my-app/
+├── bbf/
+│   ├── schema.ts         # defineSchema() + defineTable()
+│   ├── queries/          # query() functions (auto-realtime)
+│   ├── mutations/        # mutation() functions (transactions)
+│   ├── actions/          # action() functions (side-effects)
+│   └── cron.ts           # scheduled functions
+├── betterbase.config.ts  # Optional config
+└── package.json
+```
+
+### Original Pattern (Advanced)
+
+```
+my-app/
+├── src/
+│   ├── db/schema.ts      # Drizzle schema
+│   ├── routes/           # Hono routes
+│   └── functions/        # Serverless functions
+└── package.json
+```
+
+Both patterns work together.
+
+---
+
+## Package Architecture
+
+| Package | Purpose |
+|---------|---------|
+| `@betterbase/cli` | CLI tool (`bb` command) |
+| `@betterbase/client` | TypeScript SDK for frontend |
+| `@betterbase/core` | Core backend engine |
+| `@betterbase/shared` | Shared utilities |
+| `@betterbase/server` | Self-hosted admin API |
+| `apps/dashboard` | Admin dashboard (React) |
+
+---
+
+## Core IaC Modules
+
+### validators.ts
+`v.string()`, `v.number()`, `v.id()`, etc. — Zod-backed validators
+
+### schema.ts
+`defineSchema()`, `defineTable()` — schema definition with index builders
+
+### functions.ts
+`query()`, `mutation()`, `action()` — function primitives with context types
+
+### db-context.ts
+`DatabaseReader`, `DatabaseWriter` — typed DB access layer
+
+### function-registry.ts
+Scans `bbf/` directory, registers functions
+
+---
+
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `bb init` | Create new project |
+| `bb dev` | Start dev server |
+| `bb iac sync` | Sync schema to DB |
+| `bb iac analyze` | Query diagnostics |
+| `bb migrate` | Run migrations |
+| `bb generate` | Generate types |
+
+---
+
+## IaC Modules (`packages/core/src/iac/`)
+
+| File | Purpose |
+|------|---------|
+| `validators.ts` | `v.string()`, `v.number()`, `v.id()`, etc. — Zod-backed |
+| `schema.ts` | `defineSchema()`, `defineTable()` with index builders |
+| `functions.ts` | `query()`, `mutation()`, `action()` primitives |
+| `db-context.ts` | `DatabaseReader`, `DatabaseWriter` |
+| `function-registry.ts` | Scans `bbf/`, registers functions |
+| `schema-serializer.ts` | Serialize schema to JSON |
+| `schema-diff.ts` | Diff two schemas, detect changes |
+| `generators/drizzle-schema-gen.ts` | Generate Drizzle schema |
+| `generators/migration-gen.ts` | Generate SQL migrations |
+| `generators/api-typegen.ts` | Generate TypeScript types |
+| `cron.ts` | `cron()` scheduled functions |
+
+---
+
+## Dashboard (`apps/dashboard/`)
+
+React admin dashboard for self-hosted management.
+
+### Pages
+
+| Page | Route | Description |
+|------|-------|-------------|
+| Overview | `/` | Metrics, charts, activity |
+| Projects | `/projects` | List all projects |
+| Project Detail | `/projects/:id` | Project settings |
+| Project Functions | `/projects/:id/functions` | Serverless functions |
+| Storage | `/storage` | Storage buckets |
+| Logs | `/logs` | Request logs |
+| Audit | `/audit` | Audit log |
+| Settings | `/settings` | Instance settings |
+
+### Tech Stack
+
+- React Router v7
+- TanStack Query v5
+- Tailwind CSS v4
+- shadcn/ui components
+- Recharts for charts
 
 ### Architecture Flow Diagram
 
@@ -204,7 +250,7 @@ betterbase/
 │   │   │   ├── index.ts            # Main CLI entry point
 │   │   │   ├── build.ts            # Build script
 │   │   │   ├── constants.ts        # Shared constants
-│   │   │   ├── commands/           # CLI commands (14 files)
+│   │   │   ├── commands/           # CLI commands (20+ files)
 │   │   │   │   ├── auth.ts         # bb auth setup - BetterAuth integration
 │   │   │   │   ├── auth-providers.ts # bb auth add-provider - OAuth provider management
 │   │   │   │   ├── dev.ts          # bb dev - Development server with watch
@@ -219,7 +265,20 @@ betterbase/
 │   │   │   │   ├── rls-test.ts     # bb rls test - RLS policy testing
 │   │   │   │   ├── storage.ts      # bb storage - Storage bucket management
 │   │   │   │   ├── webhook.ts      # bb webhook - Webhook management
-│   │   │   │   └── branch.ts       # bb branch - Branch management
+│   │   │   │   ├── branch.ts       # bb branch - Branch management
+│   │   │   │   ├── iac/            # IaC commands (NEW in Phase 3)
+│   │   │   │   │   ├── analyze.ts  # bb iac analyze - Query diagnostics
+│   │   │   │   │   ├── export.ts   # bb iac export - Data export
+│   │   │   │   │   ├── import.ts   # bb iac import - Data import
+│   │   │   │   │   ├── generate.ts # bb iac generate - Function code gen
+│   │   │   │   │   └── sync.ts     # bb iac sync - Schema sync
+│   │   │   │   ├── migrate/        # Migration tools
+│   │   │   │   │   └── from-convex.ts # bb migrate from-convex
+│   │   │   │   └── dev/            # Dev mode utilities
+│   │   │   │       ├── process-manager.ts  # Server process management
+│   │   │   │       ├── watcher.ts         # File watcher for hot reload
+│   │   │   │       ├── error-formatter.ts  # Error formatting
+│   │   │   │       └── query-log.ts       # Query logging (NEW)
 │   │   │   └── utils/              # CLI utilities (8 files)
 │   │   │       ├── context-generator.ts   # Generates .betterbase-context.json
 │   │   │       ├── logger.ts              # Colored console logging
@@ -896,6 +955,80 @@ Preview Environments module for creating isolated development branches.
     - `PATCH /api/:table/:id` - Update existing row
     - `DELETE /api/:table/:id` - Delete row
 
+### iac/ (NEW - Phase 3)
+
+Infrastructure as Code module - Convex-inspired database and functions.
+
+#### [`iac/index.ts`](packages/core/src/iac/index.ts)
+**Purpose:** IaC module exports.
+- **Exports:** `query`, `mutation`, `action`, `defineSchema`, `defineTable`, `v`, `cron`
+
+#### [`iac/schema.ts`](packages/core/src/iac/schema.ts)
+**Purpose:** Schema definition with `defineSchema` and `defineTable`.
+- **Exports:** `defineSchema`, `defineTable`, `SchemaDefinition`, `TableDefinition`
+- **Key Features:**
+  - Define tables with fields and indexes
+  - Support for full-text and vector fields
+  - Index definitions for query optimization
+
+#### [`iac/functions.ts`](packages/core/src/iac/functions.ts)
+**Purpose:** Function registration (query, mutation, action).
+- **Exports:** `query`, `mutation`, `action`, `QueryRegistration`, `MutationRegistration`, `ActionRegistration`
+- **Key Features:**
+  - Optimistic updates support (`optimistic` field)
+  - Argument validation with v.* validators
+  - Handler functions with full ctx access
+
+#### [`iac/validators.ts`](packages/core/src/iac/validators.ts)
+**Purpose:** Validators for IaC function arguments.
+- **Exports:** `v` object with `string()`, `number()`, `boolean()`, `id()`, `optional()`, `array()`, `object()`, `fullText()`, `vector()`
+- **Key Types:** `VString`, `VNumber`, `VBoolean`, `VAny`
+- **Key Features:**
+  - Type-safe argument validation
+  - `fullText()` for PostgreSQL FTS fields
+  - `vector(dimensions)` for pgvector fields
+
+#### [`iac/db-context.ts`](packages/core/src/iac/db-context.ts)
+**Purpose:** Database context for IaC functions.
+- **Exports:** `DatabaseReader`, `DatabaseWriter`, `QueryBuilder`
+- **Key Methods:**
+  - `get(table, id)` - Get single document
+  - `query(table)` - Create query builder
+  - `insert(table, doc)` - Insert document
+  - `patch(table, id, doc)` - Update document
+  - `delete(table, id)` - Delete document
+  - `execute(sql, params)` - Raw SQL execution (NEW)
+  - `search(table, query)` - Full-text search (NEW)
+  - `similarity(table, embedding, options)` - Vector search (NEW)
+  - `analyze(query)` - Query diagnostics (NEW)
+
+#### [`iac/cron.ts`](packages/core/src/iac/cron.ts)
+**Purpose:** Cron job scheduling for scheduled tasks.
+- **Exports:** `cron`, `getCronJobs`, `CronJob`
+- **Key Features:**
+  - Cron expression scheduling
+  - Registered jobs run on schedule
+
+#### [`iac/errors.ts`](packages/core/src/iac/errors.ts) (NEW)
+**Purpose:** Improved error classes with suggestions.
+- **Exports:** `IaCError`, `ValidationError`, `DatabaseError`, `AuthError`, `NotFoundError`, `formatError`
+- **Key Features:**
+  - Error codes and suggestions
+  - Auto-suggestions for common errors
+  - Links to documentation
+
+#### [`iac/schema-serializer.ts`](packages/core/src/iac/schema-serializer.ts)
+**Purpose:** Serializes IaC schema to Drizzle schema.
+- **Exports:** `serializeSchema`, `serializeTable`
+
+#### [`iac/schema-diff.ts`](packages/core/src/iac/schema-diff.ts)
+**Purpose:** Computes schema diffs for migrations.
+- **Exports:** `diffSchema`, `SchemaDiff`
+
+#### [`iac/function-registry.ts`](packages/core/src/iac/function-registry.ts)
+**Purpose:** Registry for all IaC functions.
+- **Exports:** `registerFunction`, `lookupFunction`, `listFunctions`
+
 ### webhooks/
 
 #### [`webhooks/index.ts`](packages/core/src/webhooks/index.ts)
@@ -1078,6 +1211,33 @@ Realtime subscriptions module for WebSocket-based live data updates.
 
 #### [`src/build.ts`](packages/client/src/build.ts)
 **Purpose:** Build configuration for client package.
+
+### IaC Client Modules (NEW - Phase 3)
+
+#### [`src/iac/hooks.ts`](packages/client/src/iac/hooks.ts)
+**Purpose:** React hooks for IaC functions (query, mutation).
+- **Exports:** `useQuery`, `useMutation`, `useAction`
+- **Key Features:**
+  - `useQuery(path, args)` - Subscribe to query results
+  - `useMutation(path)` - Execute mutations with optimistic updates
+  - `useAction(path)` - Execute one-off actions
+  - Optimistic updates support (`optimisticData` return)
+
+#### [`src/iac/vanilla.ts`](packages/client/src/iac/vanilla.ts)
+**Purpose:** Non-React IaC client for vanilla JS/other frameworks.
+- **Exports:** `createIaCClient`, `IaCClient`
+- **Key Methods:**
+  - `query(path, args)` - Execute query
+  - `mutation(path, args, options)` - Execute mutation
+  - `action(path, args)` - Execute action
+
+#### [`src/iac/embeddings.ts`](packages/client/src/iac/embeddings.ts)
+**Purpose:** Embedding generation utilities for vector search.
+- **Exports:** `generateEmbedding`, `createEmbeddingProvider`
+- **Key Features:**
+  - OpenAI embeddings support
+  - Cohere embeddings support
+  - Text-to-vector conversion
 
 ---
 

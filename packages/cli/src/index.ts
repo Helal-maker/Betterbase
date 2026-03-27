@@ -6,6 +6,9 @@ import { runDevCommand } from "./commands/dev";
 import { runFunctionCommand } from "./commands/function";
 import { runGenerateCrudCommand } from "./commands/generate";
 import { runGenerateGraphqlCommand, runGraphqlPlaygroundCommand } from "./commands/graphql";
+import { runIacAnalyze } from "./commands/iac/analyze";
+import { runIacExport } from "./commands/iac/export";
+import { runIacImport } from "./commands/iac/import";
 import { runInitCommand } from "./commands/init";
 import { isAuthenticated, runLoginCommand, runLogoutCommand } from "./commands/login";
 import {
@@ -13,6 +16,7 @@ import {
 	runMigrateHistoryCommand,
 	runMigrateRollbackCommand,
 } from "./commands/migrate";
+import { runMigrateFromConvex } from "./commands/migrate/from-convex";
 import { runRlsCommand } from "./commands/rls";
 import { runRLSTestCommand } from "./commands/rls-test";
 import {
@@ -65,9 +69,10 @@ export function createProgram(): Command {
 	program
 		.command("init")
 		.description("Initialize a BetterBase project")
+		.option("--iac", "Use IaC-first project template with bbf/ functions")
 		.argument("[project-name]", "project name")
-		.action(async (projectName?: string) => {
-			await runInitCommand({ projectName });
+		.action(async (options: { iac?: boolean }, projectName?: string) => {
+			await runInitCommand({ projectName, ...options });
 		});
 
 	program
@@ -159,6 +164,52 @@ export function createProgram(): Command {
 			await runGraphqlPlaygroundCommand();
 		});
 
+	const iac = program.command("iac").description("IaC (Infrastructure as Code) management");
+
+	iac
+		.command("analyze")
+		.description("Run query diagnostics and analyze for performance issues")
+		.argument("[project-root]", "project root directory", process.cwd())
+		.option("-o, --output <format>", "Output format: json or table", "table")
+		.action(async (projectRoot: string, options: { output?: string }) => {
+			const output = options.output === "json" ? "json" : "table";
+			await runIacAnalyze(projectRoot, { output });
+		});
+
+	iac
+		.command("export")
+		.description("Export data from the project database")
+		.argument("[project-root]", "project root directory", process.cwd())
+		.option("-f, --format <format>", "Export format: json or sql", "json")
+		.option("-o, --output <path>", "Output directory", "./backup")
+		.option("-t, --table <name>", "Table name to export")
+		.action(
+			async (
+				projectRoot: string,
+				options: { format?: string; output?: string; table?: string },
+			) => {
+				await runIacExport(projectRoot, {
+					format: options.format as "json" | "sql",
+					output: options.output ?? "./backup",
+					table: options.table,
+				});
+			},
+		);
+
+	iac
+		.command("import")
+		.description("Import data into the project database")
+		.argument("<input>", "Input file path to import")
+		.option("-t, --table <name>", "Table name to import into")
+		.option("-d, --dry-run", "Preview changes without applying them")
+		.action(async (input: string, options: { table?: string; dryRun?: boolean }) => {
+			await runIacImport(process.cwd(), {
+				input,
+				table: options.table,
+				dryRun: options.dryRun,
+			});
+		});
+
 	const migrate = program
 		.command("migrate")
 		.description("Generate and apply migrations for local development");
@@ -196,6 +247,18 @@ export function createProgram(): Command {
 		.description("Show migration history")
 		.action(async () => {
 			await runMigrateHistoryCommand(process.cwd());
+		});
+
+	migrate
+		.command("from-convex")
+		.description("Migrate a Convex project to BetterBase")
+		.argument("<input-path>", "Path to the Convex project directory")
+		.option("-o, --output <path>", "Output directory for migrated project", "./migrated")
+		.action(async (inputPath: string, options: { output?: string }) => {
+			await runMigrateFromConvex({
+				inputPath,
+				outputPath: options.output ?? "./migrated",
+			});
 		});
 
 	const storage = program.command("storage").description("Storage management");
