@@ -4,7 +4,7 @@ import type {
 	QueryRegistration,
 } from "@betterbase/core/iac";
 
-export interface VanillaBBFClient {
+export interface VanillaBetterBaseClient {
 	/** Call a query function and return the result */
 	query<TReturn>(
 		fn: QueryRegistration<any, TReturn>,
@@ -34,18 +34,18 @@ export interface VanillaBBFClient {
 	close(): void;
 }
 
-export function createBBFClient(opts: {
+export function createBetterBaseClient(opts: {
 	url: string;
 	projectSlug?: string;
 	getToken?: () => string | null;
-}): VanillaBBFClient {
+}): VanillaBetterBaseClient {
 	const { url, projectSlug = "default", getToken } = opts;
 	let ws: WebSocket | null = null;
 	const listeners = new Map<string, Set<() => void>>();
 
 	function getWS(): WebSocket {
 		if (ws?.readyState === WebSocket.OPEN) return ws;
-		const wsUrl = `${url.replace(/^http/, "ws")}/bbf/ws?project=${projectSlug}`;
+		const wsUrl = `${url.replace(/^http/, "ws")}/betterbase/ws?project=${projectSlug}`;
 		ws = new WebSocket(wsUrl);
 		ws.onmessage = (event) => {
 			const msg = JSON.parse(event.data);
@@ -61,9 +61,9 @@ export function createBBFClient(opts: {
 	}
 
 	async function call(kind: string, fn: any, args: unknown): Promise<unknown> {
-		const path = fn.__bbfPath ?? "unknown";
+		const path = fn.__betterbasePath ?? "unknown";
 		const token = getToken?.();
-		const res = await fetch(`${url}/bbf/${path}`, {
+		const res = await fetch(`${url}/betterbase/${path}`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -91,7 +91,7 @@ export function createBBFClient(opts: {
 		action: (fn, args) => call("actions", fn, args) as any,
 
 		subscribe(fn, args, onChange) {
-			const path = (fn as any).__bbfPath ?? "unknown";
+			const path = (fn as any).__betterbasePath ?? "unknown";
 			if (!listeners.has(path)) listeners.set(path, new Set());
 			listeners.get(path)!.add(onChange);
 

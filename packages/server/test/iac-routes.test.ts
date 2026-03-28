@@ -65,13 +65,13 @@ describe("IaC Routes", () => {
 						name: "getUser",
 						kind: "query",
 						path: "queries/users/getUser",
-						module: "/app/bbf/queries/users.ts",
+						module: "/app/betterbase/queries/users.ts",
 					},
 					{
 						name: "createPost",
 						kind: "mutation",
 						path: "mutations/posts/createPost",
-						module: "/app/bbf/mutations/posts.ts",
+						module: "/app/betterbase/mutations/posts.ts",
 					},
 				],
 			});

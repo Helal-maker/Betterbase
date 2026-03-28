@@ -14,16 +14,16 @@ export async function runIacAnalyze(
 	projectRoot: string,
 	opts?: { output?: "table" | "json" },
 ): Promise<void> {
-	const bbfDir = join(projectRoot, "bbf");
+	const betterbaseDir = join(projectRoot, "betterbase");
 
-	if (!statSync(bbfDir).isDirectory()) {
-		logger.error("No bbf/ directory found. Run this from a BetterBase project.");
+	if (!statSync(betterbaseDir).isDirectory()) {
+		logger.error("No betterbase/ directory found. Run this from a BetterBase project.");
 		return;
 	}
 
 	logger.info("Analyzing queries...");
 
-	const queries = scanQueries(bbfDir);
+	const queries = scanQueries(betterbaseDir);
 	const results: QueryAnalysis[] = [];
 
 	for (const q of queries) {
@@ -46,8 +46,8 @@ interface QueryAnalysis {
 	suggestions: string[];
 }
 
-function scanQueries(bbfDir: string): string[] {
-	const queriesDir = join(bbfDir, "queries");
+function scanQueries(betterbaseDir: string): string[] {
+	const queriesDir = join(betterbaseDir, "queries");
 	const files: string[] = [];
 
 	if (!statSync(queriesDir).isDirectory()) return [];
@@ -69,7 +69,7 @@ function scanQueries(bbfDir: string): string[] {
 
 function analyzeQuery(filePath: string): QueryAnalysis {
 	const content = readFileSync(filePath, "utf-8");
-	const path = filePath.replace(join(process.cwd(), "bbf/"), "");
+	const path = filePath.replace(join(process.cwd(), "betterbase/"), "");
 
 	const issues: string[] = [];
 	const suggestions: string[] = [];

@@ -68,8 +68,8 @@ export function createProgram(): Command {
 
 	program
 		.command("init")
-		.description("Initialize a BetterBase project")
-		.option("--iac", "Use IaC-first project template with bbf/ functions")
+		.description("Initialize a BetterBase project with BetterBase template (betterbase/ functions)")
+		.option("--no-iac", "Use interactive mode instead of BetterBase template (for legacy projects)")
 		.argument("[project-name]", "project name")
 		.action(async (options: { iac?: boolean }, projectName?: string) => {
 			await runInitCommand({ projectName, ...options });

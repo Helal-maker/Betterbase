@@ -4,18 +4,18 @@ import type {
 	QueryRegistration,
 } from "@betterbase/core/iac";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useBBFContext } from "./provider";
+import { useBetterBaseContext } from "./provider";
 
 // ─── Internal fetch helper ────────────────────────────────────────────────────
 
-async function callBBF<T>(
+async function callBetterBase<T>(
 	baseUrl: string,
 	path: string,
 	args: unknown,
 	getToken?: () => string | null,
 ): Promise<T> {
 	const token = getToken?.();
-	const res = await fetch(`${baseUrl}/bbf/${path}`, {
+	const res = await fetch(`${baseUrl}/betterbase/${path}`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -50,8 +50,8 @@ export function useQuery<TReturn>(
 	fn: QueryRegistration<any, TReturn>,
 	args: Record<string, unknown> = {},
 ): UseQueryResult<TReturn> {
-	const { config, ws, wsReady } = useBBFContext();
-	const path = (fn as any).__bbfPath as string;
+	const { config, ws, wsReady } = useBetterBaseContext();
+	const path = (fn as any).__betterbasePath as string;
 	const argsJson = useMemo(() => JSON.stringify(args), [args]);
 
 	const [data, setData] = useState<TReturn | undefined>(undefined);
@@ -66,7 +66,7 @@ export function useQuery<TReturn>(
 
 		setStatus("loading");
 		try {
-			const result = await callBBF<TReturn>(
+			const result = await callBetterBase<TReturn>(
 				config.url,
 				path,
 				JSON.parse(argsJson),
@@ -140,8 +140,8 @@ export interface UseMutationResult<TArgs, TReturn> {
 export function useMutation<TReturn = void>(
 	fn: MutationRegistration<any, TReturn>,
 ): UseMutationResult<Record<string, unknown>, TReturn> {
-	const { config } = useBBFContext();
-	const path = (fn as any).__bbfPath as string;
+	const { config } = useBetterBaseContext();
+	const path = (fn as any).__betterbasePath as string;
 	const optimisticFn = (fn as any)._optimistic as
 		| ((args: Record<string, unknown>) => TReturn)
 		| undefined;
@@ -162,7 +162,7 @@ export function useMutation<TReturn = void>(
 			}
 
 			try {
-				const result = await callBBF<TReturn>(config.url, path, args, config.getToken);
+				const result = await callBetterBase<TReturn>(config.url, path, args, config.getToken);
 				// Replace optimistic data with real result
 				setOptimisticData(result);
 				return result;
@@ -207,10 +207,13 @@ export function useMutation<TReturn = void>(
 export function useAction<TReturn = void>(
 	fn: ActionRegistration<any, TReturn>,
 ): UseMutationResult<Record<string, unknown>, TReturn> {
-	const { config } = useBBFContext();
-	const path = (fn as any).__bbfPath as string;
+	const { config } = useBetterBaseContext();
+	const path = (fn as any).__betterbasePath as string;
 
 	// Actions follow the same client pattern as mutations
-	const mutationFn = { ...fn, __bbfPath: path } as unknown as MutationRegistration<any, TReturn>;
+	const mutationFn = { ...fn, __betterbasePath: path } as unknown as MutationRegistration<
+		any,
+		TReturn
+	>;
 	return useMutation(mutationFn);
 }

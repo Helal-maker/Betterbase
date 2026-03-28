@@ -11,25 +11,25 @@ export async function runIacSync(
 	projectRoot: string,
 	opts: { force?: boolean; silent?: boolean } = {},
 ) {
-	const bbfDir = join(projectRoot, "bbf");
-	const schemaFile = join(bbfDir, "schema.ts");
-	const prevFile = join(bbfDir, "_generated", "schema.json");
+	const betterbaseDir = join(projectRoot, "betterbase");
+	const schemaFile = join(betterbaseDir, "schema.ts");
+	const prevFile = join(betterbaseDir, "_generated", "schema.json");
 	const migrDir = join(projectRoot, "drizzle", "migrations");
 	const drizzleOut = join(projectRoot, "src", "db", "schema.generated.ts");
-	const genDir = join(bbfDir, "_generated");
+	const genDir = join(betterbaseDir, "_generated");
 
 	let schemaMod: any;
 	try {
 		schemaMod = await import(schemaFile);
 	} catch (e: any) {
-		if (!opts.silent) error(`Cannot load bbf/schema.ts: ${e.message}`);
-		throw new Error(`Cannot load bbf/schema.ts: ${e.message}`);
+		if (!opts.silent) error(`Cannot load betterbase/schema.ts: ${e.message}`);
+		throw new Error(`Cannot load betterbase/schema.ts: ${e.message}`);
 	}
 
 	const schema = schemaMod.default ?? schemaMod.schema;
 	if (!schema?._tables) {
-		if (!opts.silent) error("bbf/schema.ts must export a default defineSchema(...)");
-		throw new Error("bbf/schema.ts must export a default defineSchema(...)");
+		if (!opts.silent) error("betterbase/schema.ts must export a default defineSchema(...)");
+		throw new Error("betterbase/schema.ts must export a default defineSchema(...)");
 	}
 
 	const current = serializeSchema(schema);

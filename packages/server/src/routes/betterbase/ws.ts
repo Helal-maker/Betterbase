@@ -20,7 +20,7 @@ interface ConnectedClient {
 const clients = new Map<string, ConnectedClient>();
 
 /** Bun WebSocket handler object — passed to Bun.serve() */
-export const bbfWSHandler = {
+export const betterbaseWSHandler = {
 	open(ws: any) {
 		const clientId = nanoid();
 		const projectSlug = ws.data?.projectSlug ?? "default";
@@ -139,7 +139,7 @@ export function getBunServeConfig() {
 	return {
 		fetch(req: Request, server: any) {
 			const url = new URL(req.url);
-			if (url.pathname === "/bbf/ws") {
+			if (url.pathname === "/betterbase/ws") {
 				const projectSlug = url.searchParams.get("project") ?? "default";
 				const upgraded = server.upgrade(req, { data: { projectSlug } });
 				if (upgraded) return undefined;
@@ -147,6 +147,6 @@ export function getBunServeConfig() {
 			}
 			return undefined;
 		},
-		websocket: bbfWSHandler,
+		websocket: betterbaseWSHandler,
 	};
 }

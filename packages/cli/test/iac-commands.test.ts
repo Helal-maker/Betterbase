@@ -19,7 +19,7 @@ describe("runIacAnalyze", () => {
 	it("should analyze queries and return results", async () => {
 		const mockResults = [
 			{
-				path: "bbf/queries/users.ts",
+				path: "betterbase/queries/users.ts",
 				complexity: "high" as const,
 				issues: ["Unbounded results - no .take() limit"],
 				suggestions: ["Add .take(n) to limit results"],
@@ -183,9 +183,9 @@ export default defineSchema({
 	});
 
 	it("should create correct directory structure", () => {
-		const expectedDirs = ["bbf/queries", "bbf/mutations", "bbf/actions"];
+		const expectedDirs = ["betterbase/queries", "betterbase/mutations", "betterbase/actions"];
 		expect(expectedDirs.length).toBe(3);
-		expect(expectedDirs[0]).toBe("bbf/queries");
+		expect(expectedDirs[0]).toBe("betterbase/queries");
 	});
 
 	it("should handle ctx.db.get syntax", () => {
@@ -208,9 +208,9 @@ describe("Integration Tests", () => {
 	const testProjectRoot = join(tempDir, "iac-test-project");
 
 	beforeEach(() => {
-		mkdirSync(join(testProjectRoot, "bbf", "queries"), { recursive: true });
-		mkdirSync(join(testProjectRoot, "bbf", "mutations"), { recursive: true });
-		mkdirSync(join(testProjectRoot, "bbf", "actions"), { recursive: true });
+		mkdirSync(join(testProjectRoot, "betterbase", "queries"), { recursive: true });
+		mkdirSync(join(testProjectRoot, "betterbase", "mutations"), { recursive: true });
+		mkdirSync(join(testProjectRoot, "betterbase", "actions"), { recursive: true });
 	});
 
 	afterEach(() => {
@@ -219,30 +219,30 @@ describe("Integration Tests", () => {
 
 	it("should set up test project structure", () => {
 		const dirs = [
-			join(testProjectRoot, "bbf"),
-			join(testProjectRoot, "bbf", "queries"),
-			join(testProjectRoot, "bbf", "mutations"),
-			join(testProjectRoot, "bbf", "actions"),
+			join(testProjectRoot, "betterbase"),
+			join(testProjectRoot, "betterbase", "queries"),
+			join(testProjectRoot, "betterbase", "mutations"),
+			join(testProjectRoot, "betterbase", "actions"),
 		];
 		expect(dirs.length).toBe(4);
 	});
 
 	it("should create sample query file", () => {
-		const queryPath = join(testProjectRoot, "bbf", "queries", "users.ts");
+		const queryPath = join(testProjectRoot, "betterbase", "queries", "users.ts");
 		writeFileSync(queryPath, "export const getUsers = query({});");
 		const content = readFileSync(queryPath, "utf-8");
 		expect(content).toContain("query");
 	});
 
 	it("should create sample mutation file", () => {
-		const mutationPath = join(testProjectRoot, "bbf", "mutations", "users.ts");
+		const mutationPath = join(testProjectRoot, "betterbase", "mutations", "users.ts");
 		writeFileSync(mutationPath, "export const createUser = mutation({});");
 		const content = readFileSync(mutationPath, "utf-8");
 		expect(content).toContain("mutation");
 	});
 
 	it("should create sample schema file", () => {
-		const schemaPath = join(testProjectRoot, "bbf", "schema.ts");
+		const schemaPath = join(testProjectRoot, "betterbase", "schema.ts");
 		writeFileSync(schemaPath, "export default defineSchema({});");
 		const content = readFileSync(schemaPath, "utf-8");
 		expect(content).toContain("defineSchema");

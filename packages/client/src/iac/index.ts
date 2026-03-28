@@ -1,4 +1,4 @@
-export { BetterbaseProvider, useBBFContext, type BBFConfig } from "./provider";
+export { BetterbaseProvider, useBetterBaseContext, type BetterBaseConfig } from "./provider";
 export {
 	useQuery,
 	useMutation,
@@ -7,4 +7,4 @@ export {
 	type UseMutationResult,
 } from "./hooks";
 export { usePaginatedQuery, type UsePaginatedQueryResult } from "./paginated-query";
-export { createBBFClient, type VanillaBBFClient } from "./vanilla";
+export { createBetterBaseClient, type VanillaBetterBaseClient } from "./vanilla";

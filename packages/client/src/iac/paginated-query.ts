@@ -1,6 +1,6 @@
 import type { QueryRegistration } from "@betterbase/core/iac";
 import { useCallback, useEffect, useState } from "react";
-import { useBBFContext } from "./provider";
+import { useBetterBaseContext } from "./provider";
 
 export interface UsePaginatedQueryResult<T> {
 	results: T[];
@@ -22,8 +22,8 @@ export function usePaginatedQuery<T>(
 	baseArgs: Record<string, unknown>,
 	opts: { initialNumItems?: number } = {},
 ): UsePaginatedQueryResult<T> {
-	const { config, getToken } = useBBFContext();
-	const path = (fn as any).__bbfPath as string;
+	const { config, getToken } = useBetterBaseContext();
+	const path = (fn as any).__betterbasePath as string;
 	const numItems = opts.initialNumItems ?? 10;
 
 	const [results, setResults] = useState<T[]>([]);
@@ -37,7 +37,7 @@ export function usePaginatedQuery<T>(
 			setIsLoading(true);
 			try {
 				const token = getToken?.();
-				const res = await fetch(`${config.url}/bbf/${path}`, {
+				const res = await fetch(`${config.url}/betterbase/${path}`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",

@@ -47,11 +47,11 @@ async function copyIaCTemplate(targetDir: string): Promise<void> {
 		"src/index.ts",
 		"src/modules/README.md",
 		"src/modules/.gitkeep",
-		"bbf/schema.ts",
-		"bbf/queries/todos.ts",
-		"bbf/mutations/todos.ts",
-		"bbf/actions/.gitkeep",
-		"bbf/cron.ts",
+		"betterbase/schema.ts",
+		"betterbase/queries/todos.ts",
+		"betterbase/mutations/todos.ts",
+		"betterbase/actions/.gitkeep",
+		"betterbase/cron.ts",
 	];
 
 	for (const file of templateFiles) {
@@ -67,19 +67,33 @@ async function copyIaCTemplate(targetDir: string): Promise<void> {
 		}
 	}
 
-	// Create .env file
+	// Create .env file with multi-provider support
 	await writeFile(
 		path.join(targetDir, ".env"),
-		`DATABASE_URL=postgres://user:pass@localhost:5432/mydb
+		`# Database connection (postgres, neon, supabase, planetscale)
+DATABASE_URL=postgres://user:pass@localhost:5432/mydb
+
+# Turso-specific (uncomment if using turso)
+# TURSO_URL=libsql://localhost:8080
+# TURSO_AUTH_TOKEN=
+
+# Server configuration
 NODE_ENV=development
 PORT=3000
 `,
 	);
 
-	// Create .env.example
+	// Create .env.example with all possible variables
 	await writeFile(
 		path.join(targetDir, ".env.example"),
-		`DATABASE_URL=
+		`# Database connection (postgres, neon, supabase, planetscale)
+DATABASE_URL=
+
+# Turso-specific (uncomment if using turso)
+# TURSO_URL=
+# TURSO_AUTH_TOKEN=
+
+# Server configuration
 NODE_ENV=development
 PORT=3000
 `,
@@ -110,6 +124,9 @@ const projectNameSchema = z
 
 const initOptionsSchema = z.object({
 	projectName: projectNameSchema.optional(),
+	// When flag is NOT passed: undefined (IaC mode - default)
+	// When --no-iac is passed: false (interactive mode)
+	// When --iac is passed: true (explicit IaC mode, though redundant now)
 	iac: z.boolean().optional(),
 });
 
@@ -1277,17 +1294,23 @@ export default server;
 
 /**
  * Run the `bb init` command.
+ * By default, uses BetterBase template with betterbase/ functions.
+ * Use --no-iac for interactive mode (legacy).
  */
 export async function runInitCommand(rawOptions: InitCommandOptions): Promise<void> {
 	const options = initOptionsSchema.parse(rawOptions);
 
-	// Handle --iac flag: scaffold IaC-first project template
-	if (options.iac) {
+	// Default: IaC mode (no flag passed means iac = true)
+	// --no-iac flag means iac = false (legacy interactive mode)
+	const useIaCMode = options.iac !== false;
+
+	// IaC mode (default) - Convics-style infrastructure as code
+	if (useIaCMode) {
 		const projectNameInput = options.projectName ?? "my-betterbase-app";
 		const projectName = projectNameSchema.parse(projectNameInput);
 		const projectPath = path.resolve(process.cwd(), projectName);
 
-		logger.info(`Creating IaC project: ${projectName}`);
+		logger.info(`Creating BetterBase IaC project: ${projectName}`);
 
 		try {
 			// Copy templates/iac/ to target directory
@@ -1302,8 +1325,11 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 			console.log("  bun install");
 			console.log("  bb dev");
 			console.log("");
-			console.log("Your schema is in bbf/schema.ts");
-			console.log("Your functions are in bbf/queries/ and bbf/mutations/");
+			console.log("Your schema is in betterbase/schema.ts");
+			console.log("Your functions are in betterbase/queries/ and betterbase/mutations/");
+			console.log("");
+			console.log("The project uses infrastructure-as-code with betterbase/ functions.");
+			console.log("Define your schema in betterbase/schema.ts - migrations are auto-generated.");
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			logger.error(`Failed to create IaC project: ${message}`);
@@ -1312,10 +1338,12 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 		return;
 	}
 
-	// Print deprecation notice for non-IaC init
-	logger.warn("Tip: run `bb init --iac` for the recommended IaC project structure.");
+	// Legacy interactive mode (--no-iac)
 	logger.warn(
-		"     The IaC template uses bbf/ functions + auto-migration instead of hand-written routes.",
+		"Note: Interactive mode is deprecated. Use default BetterBase mode for new projects.",
+	);
+	logger.warn(
+		"     The BetterBase template uses betterbase/ functions + auto-migration instead of hand-written routes.",
 	);
 
 	const projectNameInput =

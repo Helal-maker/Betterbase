@@ -91,7 +91,7 @@ function getSuggestionForError(error: Error): string | undefined {
 	}
 
 	if (message.includes("permission") || message.includes("denied")) {
-		return "Check your RLS policies or authentication in bbf/schema.ts";
+		return "Check your RLS policies or authentication in betterbase/schema.ts";
 	}
 
 	if (message.includes("timeout") || message.includes("timed out")) {

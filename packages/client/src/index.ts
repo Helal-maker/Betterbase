@@ -31,7 +31,7 @@ export type {
 export type { User, Session } from "./auth";
 
 // IaC exports
-export { BetterbaseProvider, useBBFContext, type BBFConfig } from "./iac/provider";
+export { BetterbaseProvider, useBetterBaseContext, type BetterBaseConfig } from "./iac/provider";
 export {
 	useQuery,
 	useMutation,
@@ -40,4 +40,4 @@ export {
 	type UseMutationResult,
 } from "./iac/hooks";
 export { usePaginatedQuery, type UsePaginatedQueryResult } from "./iac/paginated-query";
-export { createBBFClient, type VanillaBBFClient } from "./iac/vanilla";
+export { createBetterBaseClient, type VanillaBetterBaseClient } from "./iac/vanilla";

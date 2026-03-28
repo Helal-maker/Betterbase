@@ -19,12 +19,12 @@ import { getWSStats } from "./ws";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-export const bbfRouter = new Hono();
+export const betterbaseRouter = new Hono();
 
-// All function calls: POST /bbf/:kind/*
-bbfRouter.post("/:kind/*", async (c) => {
+// All function calls: POST /betterbase/:kind/*
+betterbaseRouter.post("/:kind/*", async (c) => {
 	const kind = c.req.param("kind") as "queries" | "mutations" | "actions";
-	const rest = c.req.path.replace(`/bbf/${kind}/`, "");
+	const rest = c.req.path.replace(`/betterbase/${kind}/`, "");
 	const path = `${kind}/${rest}`;
 
 	const fn = lookupFunction(path);
@@ -76,7 +76,7 @@ bbfRouter.post("/:kind/*", async (c) => {
 
 		return c.json({ result });
 	} catch (err: any) {
-		console.error(`[bbf] Error in ${path}:`, err);
+		console.error(`[betterbase] Error in ${path}:`, err);
 		const formatted = formatError(err);
 		return c.json(
 			{
@@ -131,7 +131,7 @@ class SchedulerCtx {
 
 	private async _schedule(fn: any, args: unknown, runAt: Date): Promise<string> {
 		const id = nanoid();
-		const path = fn.__bbfPath ?? "unknown";
+		const path = fn.__betterbasePath ?? "unknown";
 
 		await this._pool.query(
 			`INSERT INTO betterbase_meta.iac_scheduled_jobs
@@ -175,8 +175,8 @@ function buildActionCtx(pool: any, dbSchema: string, auth: any, projectSlug: str
 	};
 }
 
-// Direct browser upload endpoint: POST /bbf/storage/generate-upload-url
-bbfRouter.post("/storage/generate-upload-url", async (c) => {
+// Direct browser upload endpoint: POST /betterbase/storage/generate-upload-url
+betterbaseRouter.post("/storage/generate-upload-url", async (c) => {
 	const { contentType, filename } = await c.req.json();
 	const projectSlug = c.req.header("X-Project-Slug") ?? "default";
 	const storageId = `st_${nanoid(20)}`;

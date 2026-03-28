@@ -11,7 +11,7 @@ export interface MigrateFromConvexOptions {
  * Migrate a Convex project to BetterBase
  *
  * This tool converts:
- * - Convex schema (schema.ts) -> BetterBase schema (bbf/schema.ts)
+ * - Convex schema (schema.ts) -> BetterBase schema (betterbase/schema.ts)
  * - Convex validators (v.*) -> BetterBase validators (v.*)
  * - Convex functions (queries/mutations/actions) -> BetterBase functions
  */
@@ -28,34 +28,34 @@ export async function runMigrateFromConvex(options: MigrateFromConvexOptions): P
 
 	// Create output directory
 	mkdirSync(outputPath, { recursive: true });
-	mkdirSync(join(outputPath, "bbf", "queries"), { recursive: true });
-	mkdirSync(join(outputPath, "bbf", "mutations"), { recursive: true });
-	mkdirSync(join(outputPath, "bbf", "actions"), { recursive: true });
+	mkdirSync(join(outputPath, "betterbase", "queries"), { recursive: true });
+	mkdirSync(join(outputPath, "betterbase", "mutations"), { recursive: true });
+	mkdirSync(join(outputPath, "betterbase", "actions"), { recursive: true });
 
 	// Find and convert schema
 	const schemaFile = findFile(inputPath, "schema.ts");
 	if (schemaFile) {
 		const converted = convertSchema(readFileSync(schemaFile, "utf-8"));
-		writeFileSync(join(outputPath, "bbf", "schema.ts"), converted);
+		writeFileSync(join(outputPath, "betterbase", "schema.ts"), converted);
 		logger.success("Converted schema.ts");
 	}
 
 	// Find and convert queries
 	const queriesDir = join(inputPath, "queries");
 	if (statSync(queriesDir).isDirectory()) {
-		convertFunctionsDir(queriesDir, join(outputPath, "bbf", "queries"), "query");
+		convertFunctionsDir(queriesDir, join(outputPath, "betterbase", "queries"), "query");
 	}
 
 	// Find and convert mutations
 	const mutationsDir = join(inputPath, "mutations");
 	if (statSync(mutationsDir).isDirectory()) {
-		convertFunctionsDir(mutationsDir, join(outputPath, "bbf", "mutations"), "mutation");
+		convertFunctionsDir(mutationsDir, join(outputPath, "betterbase", "mutations"), "mutation");
 	}
 
 	// Find and convert actions
 	const actionsDir = join(inputPath, "actions");
 	if (statSync(actionsDir).isDirectory()) {
-		convertFunctionsDir(actionsDir, join(outputPath, "bbf", "actions"), "action");
+		convertFunctionsDir(actionsDir, join(outputPath, "betterbase", "actions"), "action");
 	}
 
 	console.log(`

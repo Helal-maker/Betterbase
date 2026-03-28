@@ -150,12 +150,12 @@ export class ContextGenerator {
 		// Scan for RLS policies
 		rlsPolicies = scanRLSPolicies(projectRoot);
 
-		// Check for bbf/ directory — if present, add IaC function metadata
-		const bbfDir = path.join(projectRoot, "bbf");
-		if (existsSync(bbfDir)) {
+		// Check for betterbase/ directory — if present, add IaC function metadata
+		const betterbaseDir = path.join(projectRoot, "betterbase");
+		if (existsSync(betterbaseDir)) {
 			try {
 				const { discoverFunctions } = await import("@betterbase/core/iac");
-				const fns = await discoverFunctions(bbfDir);
+				const fns = await discoverFunctions(betterbaseDir);
 
 				iacFunctions = fns.map((f: any) => ({
 					kind: f.kind,
@@ -163,7 +163,7 @@ export class ContextGenerator {
 					name: f.name,
 				}));
 				hasIaCLayer = true;
-				logger.success(`Found ${iacFunctions.length} IaC functions in bbf/`);
+				logger.success(`Found ${iacFunctions.length} IaC functions in betterbase/`);
 			} catch (error) {
 				logger.warn(`Failed to discover IaC functions: ${error}`);
 			}
@@ -205,7 +205,7 @@ export class ContextGenerator {
 		routes: Record<string, RouteInfo[]>,
 		rlsPolicies: Record<string, RLSPolicyConfig>,
 		iacFunctions: IaCFunctionInfo[] = [],
-		hasIaCLayer: boolean = false,
+		hasIaCLayer = false,
 	): string {
 		const tableNames = Object.keys(tables);
 		const routeCount = Object.values(routes).reduce((count, methods) => count + methods.length, 0);
@@ -215,21 +215,22 @@ export class ContextGenerator {
 
 		// Add IaC layer information if present
 		if (hasIaCLayer && iacFunctions.length > 0) {
-			const queryFns = iacFunctions.filter(f => f.kind === "query");
-			const mutationFns = iacFunctions.filter(f => f.kind === "mutation");
-			const actionFns = iacFunctions.filter(f => f.kind === "action");
+			const queryFns = iacFunctions.filter((f) => f.kind === "query");
+			const mutationFns = iacFunctions.filter((f) => f.kind === "mutation");
+			const actionFns = iacFunctions.filter((f) => f.kind === "action");
 
-			prompt += "This project uses BetterBase IaC. Server functions are in bbf/:\n";
+			prompt += "This project uses BetterBase IaC. Server functions are in betterbase/:\n";
 			if (queryFns.length > 0) {
-				prompt += `- Queries (read-only): ${queryFns.map(f => f.path).join(", ")}\n`;
+				prompt += `- Queries (read-only): ${queryFns.map((f) => f.path).join(", ")}\n`;
 			}
 			if (mutationFns.length > 0) {
-				prompt += `- Mutations (writes): ${mutationFns.map(f => f.path).join(", ")}\n`;
+				prompt += `- Mutations (writes): ${mutationFns.map((f) => f.path).join(", ")}\n`;
 			}
 			if (actionFns.length > 0) {
-				prompt += `- Actions (side-effects): ${actionFns.map(f => f.path).join(", ")}\n`;
+				prompt += `- Actions (side-effects): ${actionFns.map((f) => f.path).join(", ")}\n`;
 			}
-			prompt += "Data model defined in bbf/schema.ts. Use ctx.db inside function handlers.\n\n";
+			prompt +=
+				"Data model defined in betterbase/schema.ts. Use ctx.db inside function handlers.\n\n";
 		}
 
 		prompt += "DATABASE SCHEMA:\n";
@@ -264,8 +265,8 @@ export class ContextGenerator {
 
 		prompt += "\nWhen writing code for this project:\n";
 		if (hasIaCLayer) {
-			prompt += "1. Use bbf/ functions (query/mutation/action) for API endpoints\n";
-			prompt += "2. Data model is defined in bbf/schema.ts\n";
+			prompt += "1. Use betterbase/ functions (query/mutation/action) for API endpoints\n";
+			prompt += "2. Data model is defined in betterbase/schema.ts\n";
 		} else {
 			prompt += "1. Always import tables from '../db/schema'\n";
 			prompt += "2. Use Drizzle ORM for database queries\n";

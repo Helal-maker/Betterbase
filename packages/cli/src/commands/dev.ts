@@ -10,13 +10,13 @@ import { runIacGenerate } from "./iac/generate";
 import { runIacSync } from "./iac/sync";
 
 export async function runDevCommand(projectRoot: string) {
-	const hasBbf = existsSync(join(projectRoot, "bbf"));
-	const hasIaC = hasBbf;
+	const hasBetterBase = existsSync(join(projectRoot, "betterbase"));
+	const hasIaC = hasBetterBase;
 
 	// Print banner
 	console.log(chalk.bold.cyan("\n  BetterBase Dev\n"));
 	if (hasIaC) {
-		info("IaC layer detected — bbf/ will be watched for schema and function changes.");
+		info("IaC layer detected — betterbase/ will be watched for schema and function changes.");
 	}
 
 	// Enable query log in dev mode

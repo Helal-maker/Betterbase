@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 
-export interface BBFConfig {
+export interface BetterBaseConfig {
 	/** Base URL of the BetterBase server */
 	url: string;
 	/** Project slug — routes db queries to the right schema */
@@ -9,24 +9,24 @@ export interface BBFConfig {
 	getToken?: () => string | null;
 }
 
-interface BBFContextValue {
-	config: BBFConfig;
+interface BetterBaseContextValue {
+	config: BetterBaseConfig;
 	ws: WebSocket | null;
 	wsReady: boolean;
 	getToken: (() => string | null) | undefined;
 }
 
-const BBFContext = createContext<BBFContextValue | null>(null);
+const BetterBaseContext = createContext<BetterBaseContextValue | null>(null);
 
 export function BetterbaseProvider({
 	config,
 	children,
-}: { config: BBFConfig; children: ReactNode }) {
+}: { config: BetterBaseConfig; children: ReactNode }) {
 	const wsRef = useRef<WebSocket | null>(null);
 	const [wsReady, setWsReady] = React.useState(false);
 
 	useEffect(() => {
-		const wsUrl = `${config.url.replace(/^http/, "ws")}/bbf/ws?project=${config.projectSlug ?? "default"}`;
+		const wsUrl = `${config.url.replace(/^http/, "ws")}/betterbase/ws?project=${config.projectSlug ?? "default"}`;
 		const ws = new WebSocket(wsUrl);
 
 		ws.onopen = () => {
@@ -54,14 +54,16 @@ export function BetterbaseProvider({
 	}, [config.url, config.projectSlug]);
 
 	return (
-		<BBFContext.Provider value={{ config, ws: wsRef.current, wsReady, getToken: config.getToken }}>
+		<BetterBaseContext.Provider
+			value={{ config, ws: wsRef.current, wsReady, getToken: config.getToken }}
+		>
 			{children}
-		</BBFContext.Provider>
+		</BetterBaseContext.Provider>
 	);
 }
 
-export function useBBFContext(): BBFContextValue {
-	const ctx = useContext(BBFContext);
-	if (!ctx) throw new Error("useBBFContext must be used inside <BetterbaseProvider>");
+export function useBetterBaseContext(): BetterBaseContextValue {
+	const ctx = useContext(BetterBaseContext);
+	if (!ctx) throw new Error("useBetterBaseContext must be used inside <BetterbaseProvider>");
 	return ctx;
 }

@@ -1,27 +1,27 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { BetterbaseProvider, useAction, useMutation, useQuery } from "../src/iac/index";
-import { createBBFClient } from "../src/iac/vanilla";
+import { createBetterBaseClient } from "../src/iac/vanilla";
 
-const TEST_URL = process.env.BBF_TEST_URL ?? "http://localhost:3001";
+const TEST_URL = process.env.BETTERBASE_TEST_URL ?? "http://localhost:3001";
 const TEST_PROJECT = "test-project";
 
 describe("IaC Client Integration Tests", () => {
 	// Mock function registrations for testing
 	const mockQuery = {
-		__bbfPath: "queries/test/getUser",
+		__betterbasePath: "queries/test/getUser",
 		_args: { parse: (a: any) => ({ success: true, data: a }) },
 		_handler: async (ctx: any, args: any) => ({ id: args.id, name: "Test User" }),
 	} as any;
 
 	const mockMutation = {
-		__bbfPath: "mutations/test/createUser",
+		__betterbasePath: "mutations/test/createUser",
 		_args: { parse: (a: any) => ({ success: true, data: a }) },
 		_handler: async (ctx: any, args: any) => ({ id: "new-id", ...args }),
 	} as any;
 
-	describe("createBBFClient", () => {
+	describe("createBetterBaseClient", () => {
 		it("should create a client with valid config", () => {
-			const client = createBBFClient({ url: TEST_URL, projectSlug: TEST_PROJECT });
+			const client = createBetterBaseClient({ url: TEST_URL, projectSlug: TEST_PROJECT });
 			expect(client).toBeDefined();
 			expect(typeof client.query).toBe("function");
 			expect(typeof client.mutation).toBe("function");
@@ -29,7 +29,7 @@ describe("IaC Client Integration Tests", () => {
 		});
 
 		it("should create client and allow close", () => {
-			const client = createBBFClient({ url: TEST_URL, projectSlug: TEST_PROJECT });
+			const client = createBetterBaseClient({ url: TEST_URL, projectSlug: TEST_PROJECT });
 			expect(() => client.close()).not.toThrow();
 		});
 	});
@@ -71,7 +71,7 @@ describe("Type exports", () => {
 		expect(exports.useQuery).toBeDefined();
 	});
 
-	it("should export BBFConfig type", () => {
+	it("should export BetterBaseConfig type", () => {
 		const exports = require("../src/iac/index");
 		expect(exports.BetterbaseProvider).toBeDefined();
 	});

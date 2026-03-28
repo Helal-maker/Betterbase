@@ -1,6 +1,6 @@
 import { subscriptionTracker } from "@betterbase/core";
 import { Hono } from "hono";
-import { getWSStats } from "../../../routes/bbf/ws";
+import { getWSStats } from "../../../routes/betterbase/ws";
 
 export const projectRealtimeRoutes = new Hono();
 
