@@ -165,7 +165,11 @@ export class ContextGenerator {
 				hasIaCLayer = true;
 				logger.success(`Found ${iacFunctions.length} IaC functions in betterbase/`);
 			} catch (error) {
-				logger.warn(`Failed to discover IaC functions: ${error}`);
+				const msg = error instanceof Error ? error.message : String(error);
+				logger.warn(`Failed to discover IaC functions: ${msg}`);
+				if (msg.includes("Cannot find module") || msg.includes("ERR_MODULE_NOT_FOUND")) {
+					logger.warn("Make sure @betterbase/core is installed in your project");
+				}
 			}
 		}
 
