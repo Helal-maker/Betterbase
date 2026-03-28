@@ -6,5 +6,5 @@
 		"types": ["bun-types"],
 		"moduleResolution": "Bundler"
 	},
-	"include": ["src/**/*", "migrations/**/*", "src/types.d.ts"]
+	"include": ["src/**/*", "migrations/**/*", "src/types.d.ts", "test/**/*"]
 }

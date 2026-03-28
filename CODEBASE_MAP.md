@@ -1,6 +1,6 @@
 # BetterBase — Codebase Map
 
-> Last updated: 2026-03-27
+> Last updated: 2026-03-28
 
 ## What is BetterBase?
 
@@ -26,7 +26,7 @@ bb dev
 
 ```
 my-app/
-├── bbf/
+├── betterbase/
 │   ├── schema.ts         # defineSchema() + defineTable()
 │   ├── queries/          # query() functions (auto-realtime)
 │   ├── mutations/        # mutation() functions (transactions)
@@ -79,7 +79,7 @@ Both patterns work together.
 `DatabaseReader`, `DatabaseWriter` — typed DB access layer
 
 ### function-registry.ts
-Scans `bbf/` directory, registers functions
+Scans `betterbase/` directory, registers functions
 
 ---
 
@@ -104,7 +104,7 @@ Scans `bbf/` directory, registers functions
 | `schema.ts` | `defineSchema()`, `defineTable()` with index builders |
 | `functions.ts` | `query()`, `mutation()`, `action()` primitives |
 | `db-context.ts` | `DatabaseReader`, `DatabaseWriter` |
-| `function-registry.ts` | Scans `bbf/`, registers functions |
+| `function-registry.ts` | Scans `betterbase/`, registers functions |
 | `schema-serializer.ts` | Serialize schema to JSON |
 | `schema-diff.ts` | Diff two schemas, detect changes |
 | `generators/drizzle-schema-gen.ts` | Generate Drizzle schema |
@@ -215,10 +215,10 @@ React admin dashboard for self-hosted management.
 │           │                       │                       │                   │
 │           ▼                       ▼                       ▼                   │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐           │
-│  │   Dashboard     │    │     Server      │    │     Server      │           │
-│  │  (React App)    │    │  (@betterbase   │    │  (Project API)  │           │
-│  │  Port: 3001     │    │   /server)      │    │   Port: 3000    │           │
-│  │                 │    │  Port: 3000     │    │                 │           │
+│  │   Dashboard     │    │     Server      │    │  Inngest        │           │
+│  │  (React App)    │    │  (@betterbase   │    │  (Workflow      │           │
+│  │  Port: 3001     │    │   /server)      │    │   Engine)       │           │
+│  │                 │    │  Port: 3000     │    │  Port: 8288     │           │
 │  └─────────────────┘    └────────┬────────┘    └────────┬────────┘           │
 │                                   │                       │                    │
 │                                   └───────────┬───────────┘                    │
@@ -401,15 +401,18 @@ betterbase/
 │   │   │   ├── 001_initial_schema.sql
 │   │   │   ├── 002_admin_users.sql
 │   │   │   ├── 003_projects.sql
-│   │   │   └── 004_logs.sql
+│   │   │   ├── 004_logs.sql
+│   │   │   └── 014_inngest_support.sql
 │   │   └── src/
 │   │       ├── index.ts           # Server entry point
 │   │       ├── lib/
 │   │       │   ├── db.ts          # Database connection
-│   │       │   ├── migrate.ts    # Migration runner
-│   │       │   ├── env.ts         # Environment validation
-│   │       │   ├── auth.ts        # Auth utilities
-│   │       │   └── admin-middleware.ts  # Admin auth middleware
+│   │       │   ├── migrate.ts      # Migration runner
+│   │       │   ├── env.ts          # Environment validation
+│   │       │   ├── auth.ts         # Auth utilities
+│   │       │   ├── admin-middleware.ts  # Admin auth middleware
+│   │       │   ├── inngest.ts     # Inngest client & functions
+│   │       │   └── webhook-dispatcher.ts  # Webhook event dispatcher
 │   │       └── routes/
 │   │           ├── admin/         # Admin API routes
 │   │           │   ├── index.ts
@@ -520,12 +523,12 @@ Betterbase includes production-ready Docker configuration for self-hosted deploy
 | `Dockerfile` | Monorepo build (for developing Betterbase itself) |
 | `Dockerfile.project` | Project template for deploying user projects |
 | `docker-compose.yml` | Development environment with PostgreSQL |
+| `docker-compose.dev.yml` | Inngest dev server for local development |
 | `docker-compose.production.yml` | Production-ready configuration |
 | `docker-compose.self-hosted.yml` | Self-hosted deployment with dashboard |
 | `docker/nginx/nginx.conf` | Nginx reverse proxy configuration |
 | `.dockerignore` | Optimizes Docker builds |
 | `.env.example` | Environment variable template |
-| `.env.self-hosted.example` | Self-hosted environment variables |
 
 ### Quick Start
 
@@ -541,11 +544,43 @@ docker-compose -f docker-compose.production.yml up -d
 
 - **Multi-stage builds** for minimal image size
 - **PostgreSQL** included in dev environment
+- **Inngest** for durable workflows and background jobs
 - **Health checks** for reliability
 - **Non-root user** for security
 - **Volume mounts** for hot-reload in development
 - **External database support** - Neon, Supabase, RDS, etc.
 - **S3-compatible storage** - R2, S3, B2, MinIO
+
+---
+
+## Inngest Integration
+
+Betterbase uses [Inngest](https://www.inngest.com/) for durable workflows and background jobs.
+
+### Deployment Modes
+
+| Mode | Inngest Backend | Used By |
+|------|----------------|---------|
+| Cloud | `https://api.inngest.com` | BetterBase Cloud |
+| Self-Hosted | `http://inngest:8288` | Docker deployment |
+| Local Dev | `http://localhost:8288` | Development |
+
+### Inngest Functions
+
+| Function | Trigger | Description |
+|----------|---------|-------------|
+| `deliverWebhook` | Event | Retryable webhook delivery with auto-backoff |
+| `evaluateNotificationRule` | Event | Email/webhook notifications on threshold breach |
+| `exportProjectUsers` | Event | Background CSV export |
+| `pollNotificationRules` | Cron (*/5 * * * *) | 5-minute metric polling |
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `INNGEST_BASE_URL` | Inngest backend URL |
+| `INNGEST_SIGNING_KEY` | Verifies Inngest→Server callbacks |
+| `INNGEST_EVENT_KEY` | Authenticates Server→Inngest events |
 
 ---
 

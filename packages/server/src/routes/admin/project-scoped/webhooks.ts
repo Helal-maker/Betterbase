@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getPool } from "../../../lib/db";
+import { inngest } from "../../../lib/inngest";
 
 export const projectWebhookRoutes = new Hono();
 
@@ -60,52 +61,49 @@ projectWebhookRoutes.post("/:webhookId/retry", async (c) => {
 	if (webhooks.length === 0) return c.json({ error: "Webhook not found" }, 404);
 
 	const webhook = webhooks[0];
-	const syntheticPayload = {
-		id: nanoid(),
-		webhook_id: webhook.id,
-		table: webhook.table_name,
-		type: "RETRY",
-		record: {},
-		timestamp: new Date().toISOString(),
-	};
 
-	// Fire delivery attempt
-	const start = Date.now();
-	let status = "failed";
-	let responseCode: number | null = null;
-	let responseBody: string | null = null;
+	// Get the latest failed delivery to use its payload for retry
+	const { rows: lastDelivery } = await pool.query(
+		`SELECT payload, attempt_count FROM betterbase_meta.webhook_deliveries
+     WHERE webhook_id = $1
+     ORDER BY created_at DESC LIMIT 1`,
+		[webhook.id],
+	);
 
-	try {
-		const res = await fetch(webhook.url, {
-			method: "POST",
-			headers: { "Content-Type": "application/json", "X-Betterbase-Event": "RETRY" },
-			body: JSON.stringify(syntheticPayload),
-		});
-		responseCode = res.status;
-		responseBody = await res.text();
-		status = res.ok ? "success" : "failed";
-	} catch (err: any) {
-		responseBody = err.message;
-	}
+	const payload = lastDelivery[0]?.payload ?? {};
+	const attempt = (lastDelivery[0]?.attempt_count ?? 0) + 1;
 
-	const duration = Date.now() - start;
+	// Send event to Inngest — Inngest handles the retry, backoff, and delivery logging
+	await inngest.send({
+		name: "betterbase/webhook.deliver",
+		data: {
+			webhookId: webhook.id,
+			webhookName: webhook.name,
+			url: webhook.url,
+			secret: webhook.secret ?? null,
+			eventType: "RETRY",
+			tableName: webhook.table_name,
+			payload,
+			attempt,
+		},
+	});
 
+	// Insert a pending delivery record immediately so the dashboard shows activity
 	await pool.query(
 		`INSERT INTO betterbase_meta.webhook_deliveries
-       (webhook_id, event_type, payload, status, response_code, response_body, duration_ms, delivered_at)
-     VALUES ($1, 'RETRY', $2, $3, $4, $5, $6, NOW())`,
-		[webhook.id, JSON.stringify(syntheticPayload), status, responseCode, responseBody, duration],
+       (webhook_id, event_type, payload, status, attempt_count)
+     VALUES ($1, 'RETRY', $2, 'pending', $3)`,
+		[webhook.id, JSON.stringify(payload), attempt],
 	);
 
 	return c.json({
-		success: status === "success",
-		status,
-		response_code: responseCode,
-		duration_ms: duration,
+		success: true,
+		message:
+			"Retry queued via Inngest. Delivery will be attempted with automatic backoff on failure.",
 	});
 });
 
-// POST /admin/projects/:id/webhooks/:webhookId/test  — send synthetic test payload
+// POST /admin/projects/:id/webhooks/:webhookId/test
 projectWebhookRoutes.post("/:webhookId/test", async (c) => {
 	const pool = getPool();
 	const { rows } = await pool.query("SELECT * FROM betterbase_meta.webhooks WHERE id = $1", [
@@ -114,23 +112,24 @@ projectWebhookRoutes.post("/:webhookId/test", async (c) => {
 	if (rows.length === 0) return c.json({ error: "Not found" }, 404);
 
 	const webhook = rows[0];
-	const payload = {
-		id: nanoid(),
-		webhook_id: webhook.id,
-		table: webhook.table_name,
-		type: "TEST",
-		record: { id: "test-123", example: "data" },
-		timestamp: new Date().toISOString(),
-	};
 
-	try {
-		const res = await fetch(webhook.url, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(payload),
-		});
-		return c.json({ success: res.ok, status_code: res.status });
-	} catch (err: any) {
-		return c.json({ success: false, error: err.message });
-	}
+	// Test deliveries go through Inngest too — provides identical trace visibility
+	await inngest.send({
+		name: "betterbase/webhook.deliver",
+		data: {
+			webhookId: webhook.id,
+			webhookName: webhook.name,
+			url: webhook.url,
+			secret: webhook.secret ?? null,
+			eventType: "TEST",
+			tableName: webhook.table_name,
+			payload: { id: "test-123", example: "data", _test: true },
+			attempt: 1,
+		},
+	});
+
+	return c.json({
+		success: true,
+		message: "Test event sent to Inngest. Check the Inngest dashboard for delivery trace.",
+	});
 });

@@ -5,15 +5,18 @@ const EnvSchema = z.object({
 	BETTERBASE_JWT_SECRET: z.string().min(32, "JWT secret must be at least 32 characters"),
 	BETTERBASE_ADMIN_EMAIL: z.string().email().optional(),
 	BETTERBASE_ADMIN_PASSWORD: z.string().min(8).optional(),
- PORT: z.string().default("3001"),
+	PORT: z.string().default("3001"),
 	NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 	STORAGE_ENDPOINT: z.string().optional(),
 	STORAGE_ACCESS_KEY: z.string().optional(),
 	STORAGE_SECRET_KEY: z.string().optional(),
-	STORAGE_BUCKET: z.string().default("betterbase"),
+	STORAGE_BUCKET: z.string().default("better_base"),
 	STORAGE_PUBLIC_BASE: z.string().url().optional(),
 	CORS_ORIGINS: z.string().default("http://localhost:3000"),
 	BETTERBASE_PUBLIC_URL: z.string().optional(),
+	INNGEST_BASE_URL: z.string().url().optional(), // undefined = use api.inngest.com
+	INNGEST_SIGNING_KEY: z.string().optional(), // required in production cloud mode
+	INNGEST_EVENT_KEY: z.string().optional(), // required in production cloud mode
 });
 
 export type Env = z.infer<typeof EnvSchema>;

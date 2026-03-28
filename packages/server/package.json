@@ -23,7 +23,8 @@
 		"@hono/zod-validator": "^0.4.0",
 		"@aws-sdk/client-s3": "^3.995.0",
 		"@aws-sdk/s3-request-presigner": "^3.995.0",
-		"nodemailer": "^6.9.0"
+		"nodemailer": "^6.9.0",
+		"inngest": "^3.0.0"
 	},
 	"devDependencies": {
 		"@types/bcryptjs": "^2.4.6",

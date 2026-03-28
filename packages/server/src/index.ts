@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { serve } from "inngest/hono";
 import { getPool } from "./lib/db";
 import { validateEnv } from "./lib/env";
+import { allInngestFunctions, inngest } from "./lib/inngest";
 import { runMigrations } from "./lib/migrate";
 import { adminRouter } from "./routes/admin/index";
 import { betterbaseRouter } from "./routes/betterbase/index";
@@ -59,6 +61,20 @@ app.use(
 
 // Health check — used by Docker HEALTHCHECK
 app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));
+
+// ─── Inngest Function Serve Handler ──────────────────────────────────────────
+// This endpoint is called by the Inngest backend (cloud or self-hosted) to
+// execute registered functions. It handles GET (introspection/registration)
+// and POST (function execution) automatically.
+app.on(
+	["GET", "POST", "PUT"],
+	"/api/inngest",
+	serve({
+		client: inngest,
+		functions: allInngestFunctions,
+		signingKey: process.env.INNGEST_SIGNING_KEY,
+	}),
+);
 
 // Routers
 app.route("/admin", adminRouter);

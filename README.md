@@ -6,7 +6,7 @@
 
 Betterbase is an open-source alternative to Supabase, built with Bun for blazing-fast performance. It provides database, authentication, realtime subscriptions, storage, and serverless functions with sub-100ms local dev using Bun + SQLite.
 
-**Last Updated: 2026-03-27**
+**Last Updated: 2026-03-28**
 
 </div>
 
@@ -30,7 +30,7 @@ Traditional backend development is slow. You spend weeks setting up databases, a
 │                                │                                                │
 │                         ┌──────▼──────┐                                         │
 │                         │  IaC Layer  │ (Convex-inspired)                       │
-│                         │  bbf/       │                                         │
+│                         │  betterbase/ │ (Convex-inspired)                       │
 │                         └─────────────┘                                         │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -50,11 +50,41 @@ bun install
 bb dev
 ```
 
+## Inngest Integration
+
+Betterbase uses [Inngest](https://www.inngest.com/) for durable workflows and background jobs.
+
+### Deployment Modes
+
+| Mode | Inngest Backend | Used By |
+|------|----------------|---------|
+| Cloud | `https://api.inngest.com` | BetterBase Cloud offering |
+| Self-Hosted | `http://inngest:8288` | Docker deployment |
+| Local Dev | `http://localhost:8288` | Development and testing |
+
+### Environment Variables
+
+```bash
+# For local development
+INNGEST_BASE_URL=http://localhost:8288
+
+# For self-hosted production
+INNGEST_BASE_URL=http://inngest:8288
+INNGEST_SIGNING_KEY=your-signing-key
+INNGEST_EVENT_KEY=your-event-key
+```
+
+### Features
+
+- **Webhook Delivery**: Retryable, observable webhook delivery with automatic backoff
+- **Notification Rules**: Cron-based metric polling with fan-out notifications
+- **Background Exports**: Async CSV export with progress tracking
+
 Your project structure:
 
 ```
 my-app/
-├── bbf/
+├── betterbase/
 │   ├── schema.ts         # Define tables (Convex-style)
 │   ├── queries/          # Read functions (auto-subscribe)
 │   ├── mutations/        # Write functions (transactions)
@@ -65,7 +95,7 @@ my-app/
 
 ### Define Your Schema
 
-Edit `bbf/schema.ts`:
+Edit `betterbase/schema.ts`:
 
 ```typescript
 import { defineSchema, defineTable, v } from "@betterbase/core/iac"
@@ -88,7 +118,7 @@ export const schema = defineSchema({
 ### Write Functions
 
 ```typescript
-// bbf/queries/posts.ts
+// betterbase/queries/posts.ts
 import { query } from "@betterbase/core/iac"
 
 export const listPosts = query({
@@ -103,7 +133,7 @@ export const listPosts = query({
 ```
 
 ```typescript
-// bbf/mutations/posts.ts
+// betterbase/mutations/posts.ts
 import { mutation } from "@betterbase/core/iac"
 
 export const createPost = mutation({
@@ -160,6 +190,7 @@ Your backend runs at `http://localhost:3000`. The dashboard is at `http://localh
 | **Serverless Functions** | Deploy custom API functions |
 | **Storage** | S3-compatible object storage |
 | **Webhooks** | Event-driven with signed payloads |
+| **Background Jobs** | Durable workflows via Inngest |
 | **RLS** | Row-level security policies |
 | **Branching** | Preview environments per branch |
 
@@ -173,7 +204,7 @@ BetterBase supports two patterns:
 
 ```
 my-app/
-├── bbf/
+├── betterbase/
 │   ├── schema.ts         # defineSchema() + defineTable()
 │   ├── queries/          # query() functions
 │   ├── mutations/        # mutation() functions
@@ -197,7 +228,7 @@ my-app/
 └── package.json
 ```
 
-Both patterns work together. Add `bbf/` to any existing project.
+Both patterns work together. Add `betterbase/` to any existing project.
 
 ---
 
