@@ -44,6 +44,7 @@ const SettingsPage = lazy(() => import("@/pages/settings/SettingsPage"));
 const SmtpPage = lazy(() => import("@/pages/settings/SmtpPage"));
 const NotificationsPage = lazy(() => import("@/pages/settings/NotificationsPage"));
 const ApiKeysPage = lazy(() => import("@/pages/settings/ApiKeysPage"));
+const InngestDashboardPage = lazy(() => import("@/pages/settings/InngestDashboardPage"));
 const WebhookDeliveriesPage = lazy(() => import("@/pages/WebhookDeliveriesPage"));
 const FunctionInvocationsPage = lazy(() => import("@/pages/FunctionInvocationsPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
@@ -92,6 +93,7 @@ export const routes: RouteObject[] = [
 			{ path: "settings/smtp", element: wrap(SmtpPage) },
 			{ path: "settings/notifications", element: wrap(NotificationsPage) },
 			{ path: "settings/api-keys", element: wrap(ApiKeysPage) },
+			{ path: "settings/inngest", element: wrap(InngestDashboardPage) },
 		],
 	},
 	{ path: "*", element: wrap(NotFoundPage) },

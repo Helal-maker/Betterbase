@@ -4,6 +4,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { clearToken, getStoredAdmin } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
+	Activity,
 	BarChart2,
 	Bell,
 	ChevronDown,
@@ -44,6 +45,7 @@ const nav = [
 			{ label: "SMTP", href: "/settings/smtp" },
 			{ label: "Notifications", href: "/settings/notifications" },
 			{ label: "API Keys", href: "/settings/api-keys" },
+			{ label: "Inngest", href: "/settings/inngest" },
 		],
 	},
 ];
