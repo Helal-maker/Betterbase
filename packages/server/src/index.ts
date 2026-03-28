@@ -5,8 +5,8 @@ import { getPool } from "./lib/db";
 import { validateEnv } from "./lib/env";
 import { runMigrations } from "./lib/migrate";
 import { adminRouter } from "./routes/admin/index";
+import { betterbaseRouter } from "./routes/betterbase/index";
 import { deviceRouter } from "./routes/device/index";
-import { bbfRouter } from "./routes/bbf/index";
 
 // Validate env first — exits if invalid
 const env = validateEnv();
@@ -63,7 +63,7 @@ app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOStri
 // Routers
 app.route("/admin", adminRouter);
 app.route("/device", deviceRouter);
-app.route("/bbf", bbfRouter);
+app.route("/betterbase", betterbaseRouter);
 
 // 404
 app.notFound((c) => c.json({ error: "Not found" }, 404));

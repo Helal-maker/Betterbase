@@ -13,6 +13,17 @@ export interface BetterBaseContext {
 	graphql_schema: string | null;
 	graphql_endpoint: string;
 	ai_prompt: string;
+	iacFunctions?: IaCFunctionInfo[];
+	hasIaCLayer?: boolean;
+}
+
+/**
+ * IaC function metadata for AI context
+ */
+export interface IaCFunctionInfo {
+	kind: string;
+	path: string;
+	name: string;
 }
 
 /**
@@ -119,6 +130,8 @@ export class ContextGenerator {
 		let tables: Record<string, TableInfo> = {};
 		let routes: Record<string, RouteInfo[]> = {};
 		let rlsPolicies: Record<string, RLSPolicyConfig> = {};
+		let iacFunctions: IaCFunctionInfo[] = [];
+		let hasIaCLayer = false;
 
 		if (existsSync(schemaPath)) {
 			const schemaScanner = new SchemaScanner(schemaPath);
@@ -136,6 +149,25 @@ export class ContextGenerator {
 
 		// Scan for RLS policies
 		rlsPolicies = scanRLSPolicies(projectRoot);
+
+		// Check for betterbase/ directory — if present, add IaC function metadata
+		const betterbaseDir = path.join(projectRoot, "betterbase");
+		if (existsSync(betterbaseDir)) {
+			try {
+				const { discoverFunctions } = await import("@betterbase/core/iac");
+				const fns = await discoverFunctions(betterbaseDir);
+
+				iacFunctions = fns.map((f: any) => ({
+					kind: f.kind,
+					path: f.path,
+					name: f.name,
+				}));
+				hasIaCLayer = true;
+				logger.success(`Found ${iacFunctions.length} IaC functions in betterbase/`);
+			} catch (error) {
+				logger.warn(`Failed to discover IaC functions: ${error}`);
+			}
+		}
 
 		// Read GraphQL schema if it exists
 		let graphqlSchema: string | null = null;
@@ -156,7 +188,9 @@ export class ContextGenerator {
 			rls_policies: rlsPolicies,
 			graphql_schema: graphqlSchema,
 			graphql_endpoint: "/api/graphql",
-			ai_prompt: this.generateAIPrompt(tables, routes, rlsPolicies),
+			ai_prompt: this.generateAIPrompt(tables, routes, rlsPolicies, iacFunctions, hasIaCLayer),
+			iacFunctions: iacFunctions.length > 0 ? iacFunctions : undefined,
+			hasIaCLayer,
 		};
 
 		const outputPath = path.join(projectRoot, ".betterbase-context.json");
@@ -170,12 +204,34 @@ export class ContextGenerator {
 		tables: Record<string, TableInfo>,
 		routes: Record<string, RouteInfo[]>,
 		rlsPolicies: Record<string, RLSPolicyConfig>,
+		iacFunctions: IaCFunctionInfo[] = [],
+		hasIaCLayer = false,
 	): string {
 		const tableNames = Object.keys(tables);
 		const routeCount = Object.values(routes).reduce((count, methods) => count + methods.length, 0);
 		const policyCount = Object.keys(rlsPolicies).length;
 
 		let prompt = `This is a BetterBase backend project with ${tableNames.length} tables, ${routeCount} API endpoints, and ${policyCount} RLS policies.\n\n`;
+
+		// Add IaC layer information if present
+		if (hasIaCLayer && iacFunctions.length > 0) {
+			const queryFns = iacFunctions.filter((f) => f.kind === "query");
+			const mutationFns = iacFunctions.filter((f) => f.kind === "mutation");
+			const actionFns = iacFunctions.filter((f) => f.kind === "action");
+
+			prompt += "This project uses BetterBase IaC. Server functions are in betterbase/:\n";
+			if (queryFns.length > 0) {
+				prompt += `- Queries (read-only): ${queryFns.map((f) => f.path).join(", ")}\n`;
+			}
+			if (mutationFns.length > 0) {
+				prompt += `- Mutations (writes): ${mutationFns.map((f) => f.path).join(", ")}\n`;
+			}
+			if (actionFns.length > 0) {
+				prompt += `- Actions (side-effects): ${actionFns.map((f) => f.path).join(", ")}\n`;
+			}
+			prompt +=
+				"Data model defined in betterbase/schema.ts. Use ctx.db inside function handlers.\n\n";
+		}
 
 		prompt += "DATABASE SCHEMA:\n";
 		for (const tableName of tableNames) {
@@ -208,8 +264,13 @@ export class ContextGenerator {
 		}
 
 		prompt += "\nWhen writing code for this project:\n";
-		prompt += "1. Always import tables from '../db/schema'\n";
-		prompt += "2. Use Drizzle ORM for database queries\n";
+		if (hasIaCLayer) {
+			prompt += "1. Use betterbase/ functions (query/mutation/action) for API endpoints\n";
+			prompt += "2. Data model is defined in betterbase/schema.ts\n";
+		} else {
+			prompt += "1. Always import tables from '../db/schema'\n";
+			prompt += "2. Use Drizzle ORM for database queries\n";
+		}
 		prompt += "3. Validate inputs with Zod\n";
 		prompt += "4. Return JSON responses with proper status codes\n";
 		prompt += "5. RLS policies are enforced at the database level\n";

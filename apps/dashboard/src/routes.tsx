@@ -29,6 +29,12 @@ const ProjectRealtimePage = lazy(() => import("@/pages/projects/ProjectRealtimeP
 const ProjectEnvPage = lazy(() => import("@/pages/projects/ProjectEnvPage"));
 const ProjectWebhooksPage = lazy(() => import("@/pages/projects/ProjectWebhooksPage"));
 const ProjectFunctionsPage = lazy(() => import("@/pages/projects/ProjectFunctionsPage"));
+// IaC Pages
+const ProjectIaCSchemaPage = lazy(() => import("@/pages/projects/ProjectIaCSchemaPage"));
+const ProjectIaCFunctionsPage = lazy(() => import("@/pages/projects/ProjectIaCFunctionsPage"));
+const ProjectIaCJobsPage = lazy(() => import("@/pages/projects/ProjectIaCJobsPage"));
+const ProjectIaCRealtimePage = lazy(() => import("@/pages/projects/ProjectIaCRealtimePage"));
+const ProjectIaCQueryPage = lazy(() => import("@/pages/projects/ProjectIaCQueryPage"));
 const StoragePage = lazy(() => import("@/pages/StoragePage"));
 const StorageBucketPage = lazy(() => import("@/pages/StorageBucketPage"));
 const LogsPage = lazy(() => import("@/pages/LogsPage"));
@@ -70,6 +76,11 @@ export const routes: RouteObject[] = [
 			{ path: "projects/:projectId/env", element: wrap(ProjectEnvPage) },
 			{ path: "projects/:projectId/webhooks", element: wrap(ProjectWebhooksPage) },
 			{ path: "projects/:projectId/functions", element: wrap(ProjectFunctionsPage) },
+			{ path: "projects/:projectId/iac/schema", element: wrap(ProjectIaCSchemaPage) },
+			{ path: "projects/:projectId/iac/functions", element: wrap(ProjectIaCFunctionsPage) },
+			{ path: "projects/:projectId/iac/jobs", element: wrap(ProjectIaCJobsPage) },
+			{ path: "projects/:projectId/iac/realtime", element: wrap(ProjectIaCRealtimePage) },
+			{ path: "projects/:projectId/iac/query", element: wrap(ProjectIaCQueryPage) },
 			{ path: "webhooks/:webhookId/deliveries", element: wrap(WebhookDeliveriesPage) },
 			{ path: "functions/:functionId/invocations", element: wrap(FunctionInvocationsPage) },
 			{ path: "storage", element: wrap(StoragePage) },

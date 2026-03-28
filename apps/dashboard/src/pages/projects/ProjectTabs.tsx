@@ -4,7 +4,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import { QK } from "@/lib/query-keys";
 import { useQuery } from "@tanstack/react-query";
-import { Clock, Database, FolderOpen, Globe, Key, Users, Webhook, Zap } from "lucide-react";
+import {
+	Clock,
+	Code,
+	Database,
+	FolderOpen,
+	Globe,
+	Key,
+	ListOrdered,
+	Play,
+	Users,
+	Webhook,
+	Zap,
+} from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 
@@ -47,6 +59,11 @@ export default function ProjectDetailPageWrapper() {
 				<TabsTrigger value="functions" asChild>
 					<Link to={`/projects/${projectId}/functions`} className="flex items-center gap-1.5">
 						<Zap size={14} /> Functions
+					</Link>
+				</TabsTrigger>
+				<TabsTrigger value="iac" asChild>
+					<Link to={`/projects/${projectId}/iac/schema`} className="flex items-center gap-1.5">
+						<Code size={14} /> IaC
 					</Link>
 				</TabsTrigger>
 				<TabsTrigger value="realtime" asChild>

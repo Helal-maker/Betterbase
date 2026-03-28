@@ -20,7 +20,14 @@ export * from "./branching";
 export * from "./functions";
 
 // Logging
-export * from "./logger";
+export { logger, createRequestLogger, logSlowQuery, logError, logSuccess } from "./logger";
 
 // Realtime (Channel Manager)
 export * from "./realtime";
+
+// IaC Layer
+export * from "./iac";
+export * from "./iac/realtime/subscription-tracker";
+export * from "./iac/realtime/invalidation-manager";
+export * from "./iac/realtime/table-dep-inferrer";
+export * from "./iac/storage/storage-ctx";
