@@ -1,48 +1,71 @@
-# Betterbase
-
 <div align="center">
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/weroperking/Betterbase)
+
+```
+██████╗ ██╗  ██╗ ██████╗ ██████╗ ██╗     ███████╗    ██████╗ ██╗    ██╗███████╗
+██╔══██╗██║  ██║██╔════╝██╔═══██╗██║     ██╔════╝   ██╔═══██╗██║    ██║██╔════╝
+██████╔╝███████║██║     ██║   ██║██║     █████╗     ██║   ██║██║ █╗ ██║█████╗
+██╔══██╗██╔══██║██║     ██║   ██║██║     ██╔══╝     ██║   ██║██║███╗██║██╔══╝
+██║  ██║██║  ██║╚██████╗╚██████╔╝███████╗███████╗   ╚██████╔╝╚███╔███╔╝███████╗
+╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝╚══════╝    ╚═════╝  ╚══╝ ╚══╝ ╚══════╝
+```
 
 **The AI-Native Backend-as-a-Service Platform**
 
-Betterbase is an open-source alternative to Supabase, built with Bun for blazing-fast performance. It provides database, authentication, realtime subscriptions, storage, and serverless functions with sub-100ms local dev using Bun + SQLite.
+Blazing-fast backend development with Sub-100ms Local Dev — Built on Bun + SQLite, deploy anywhere with PostgreSQL support.
 
-**Last Updated: 2026-03-28**
+*Database • Authentication • Realtime Subscriptions • Storage • Serverless Functions • Vector Search*
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/weroperking/Betterbase)
+**Last Updated: 2026-03-29**
 
 </div>
 
 ---
 
-## Why Betterbase?
-
-Traditional backend development is slow. You spend weeks setting up databases, authentication, APIs, and infrastructure before writing business logic. Betterbase changes that.
+## Why Choose Betterbase?
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────┐
-│                           BETTERBASE ARCHITECTURE                              │
-├────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                │
-│  ┌─────────────────┐        ┌──────-──────────────────────┐     ┌────────────┐  │
-│  │    Frontend     │        │       Betterbase Core       │     │  Database  │  │
-│  │   (React,       │─────▶ |                             │───▶│  (SQLite,  │  │
-│  │    Vue,         │        │  Auth │ Realtime │ Storage  │    │   Postgres)│  │
-│  │    Mobile)      │        │  RLS  │ Vector   │ Functions│    └────────────┘  │
-│  └─────────────────┘        └────────────────────────────┘                     │
-│                                │                                               │
-│                         ┌──────▼──────┐                                        │
-│                         │  IaC Layer  │ (Convex-inspired)                      │
-│                         │  betterbase/ │ (Convex-inspired)                     │
-│                         └─────────────┘                                        │
-└────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                           ✦ BETTERBASE ARCHITECTURE ✦                                │
+├─────────────────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                     │
+│  ┌──────────────┐           ┌──────────────────────────────┐           ┌─────────┐ │
+│  │   Frontend   │           │                            │           │         │ │
+│  │ (React, Vue, │──────────▶│      BETTERBASE CORE      │──────────▶│   DB    │ │
+│  │  Mobile,     │           │                            │           │ SQLite/ │ │
+│  │  Svelte)     │           │  Auth  │  Realtime │ Storage │           │ Postgres│ │
+│  └──────────────┘           │  RLS   │  Vector  │   Fns   │           └─────────┘ │
+│                             └──────────────────────────────┘                │        │
+│                                        │                                    │        │
+│                                 ┌──────▼──────┐                              │        │
+│                                 │    IaC     │◀──── (Infrastructure as Code) │        │
+│                                 │  Layer     │                               │        │
+│                                 │ Convex-ish │                               │        │
+│                                 └───────────┘                               │        │
+│                                                                              │        │
+│                                                                      ┌──────▼──────┐│
+│                                                                      │  Inngest    ││
+│                                                                      │  Workflows  ││
+│                                                                      └────────────┘│
+└─────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+| | TraditionalBAAS | Betterbase |
+|--|------------------|------------|
+| ⚡ | Slow local dev | **Sub-100ms dev** with Bun + SQLite |
+| 🗄️ | Black box DB | **Full PostgreSQL** with raw SQL access |
+| 🔍 | Basic search | **Full-text + Vector search** built-in |
+| 🚀 | Cloud lock-in | **Self-host anywhere** with Docker |
+| 📊 | Limited analytics | **Full observability** out of the box |
+| 🔐 | Closed source | **100% open source** - deploy anywhere |
 
 ---
 
 ## Quick Start
 
 ```bash
-# Install CLI
+# Install the CLI
 bun install -g @betterbase/cli
 
 # Create a new project (IaC mode - recommended)
@@ -51,36 +74,6 @@ cd my-app
 bun install
 bb dev
 ```
-
-## Inngest Integration
-
-Betterbase uses [Inngest](https://www.inngest.com/) for durable workflows and background jobs.
-
-### Deployment Modes
-
-| Mode | Inngest Backend | Used By |
-|------|----------------|---------|
-| Cloud | `https://api.inngest.com` | BetterBase Cloud offering |
-| Self-Hosted | `http://inngest:8288` | Docker deployment |
-| Local Dev | `http://localhost:8288` | Development and testing |
-
-### Environment Variables
-
-```bash
-# For local development
-INNGEST_BASE_URL=http://localhost:8288
-
-# For self-hosted production
-INNGEST_BASE_URL=http://inngest:8288
-INNGEST_SIGNING_KEY=your-signing-key
-INNGEST_EVENT_KEY=your-event-key
-```
-
-### Features
-
-- **Webhook Delivery**: Retryable, observable webhook delivery with automatic backoff
-- **Notification Rules**: Cron-based metric polling with fan-out notifications
-- **Background Exports**: Async CSV export with progress tracking
 
 Your project structure:
 
@@ -163,22 +156,7 @@ Your backend runs at `http://localhost:3000`. The dashboard is at `http://localh
 
 ---
 
-## BetterBase vs Convex
-
-| Feature | Convex | BetterBase |
-|---------|--------|------------|
-| Database | Black box | Full PostgreSQL |
-| Raw SQL | Not available | `ctx.db.execute()` |
-| Full-Text Search | Not built-in | PostgreSQL FTS |
-| Vector Search | Limited | pgvector + HNSW |
-| Self-Hosting | Not supported | Docker to your infra |
-| Migration | — | `bb migrate from-convex` |
-
-**BetterBase gives you Convex simplicity with full SQL power.**
-
----
-
-## Features
+## Key Features
 
 | Feature | Description |
 |---------|-------------|
@@ -198,9 +176,56 @@ Your backend runs at `http://localhost:3000`. The dashboard is at `http://localh
 
 ---
 
+## Betterbase vs Convex
+
+| Feature | Convex | Betterbase |
+|---------|--------|------------|
+| Database | Black box | Full PostgreSQL |
+| Raw SQL | Not available | `ctx.db.execute()` |
+| Full-Text Search | Not built-in | PostgreSQL FTS |
+| Vector Search | Limited | pgvector + HNSW |
+| Self-Hosting | Not supported | Docker to your infra |
+| Migration | — | `bb migrate from-convex` |
+
+**Betterbase gives you Convex simplicity with full SQL power.**
+
+---
+
+## Inngest Integration
+
+Betterbase uses [Inngest](https://www.inngest.com/) for durable workflows and background jobs.
+
+### Deployment Modes
+
+| Mode | Inngest Backend | Used By |
+|------|----------------|---------|
+| Cloud | `https://api.inngest.com` | BetterBase Cloud offering |
+| Self-Hosted | `http://inngest:8288` | Docker deployment |
+| Local Dev | `http://localhost:8288` | Development and testing |
+
+### Environment Variables
+
+```bash
+# For local development
+INNGEST_BASE_URL=http://localhost:8288
+
+# For self-hosted production
+INNGEST_BASE_URL=http://inngest:8288
+INNGEST_SIGNING_KEY=your-signing-key
+INNGEST_EVENT_KEY=your-event-key
+```
+
+### Features
+
+- **Webhook Delivery**: Retryable, observable webhook delivery with automatic backoff
+- **Notification Rules**: Cron-based metric polling with fan-out notifications
+- **Background Exports**: Async CSV export with progress tracking
+
+---
+
 ## Project Structure
 
-BetterBase supports two patterns:
+Betterbase supports two patterns:
 
 ### 1. IaC Pattern (Recommended)
 
@@ -211,7 +236,7 @@ my-app/
 │   ├── queries/          # query() functions
 │   ├── mutations/        # mutation() functions
 │   ├── actions/          # action() functions
-│   └── cron.ts          # scheduled functions
+│   └── cron.ts           # scheduled functions
 ├── betterbase.config.ts  # Optional config
 └── package.json
 ```
@@ -225,7 +250,7 @@ my-app/
 │   │   ├── schema.ts     # Drizzle schema
 │   │   └── migrate.ts    # Migration runner
 │   ├── routes/           # Hono routes
-│   └── functions/       # Serverless functions
+│   └── functions/        # Serverless functions
 ├── betterbase.config.ts
 └── package.json
 ```
@@ -397,6 +422,28 @@ This ensures users can only access their own data.
 
 ---
 
+## Ask Deepwiki
+
+> *Your AI-powered development assistant, integrated directly into Betterbase.*
+
+Ask Deepwiki provides intelligent context for AI-assisted development:
+
+- **Smart Code Context**: Automatic `.betterbase-context.json` generation
+- **IaC Analysis**: Understand your schema, queries, and mutations
+- **Query Optimization**: Get recommendations for better performance
+- **Documentation Generation**: Auto-generate docs from your code
+
+**Deepwiki Badge**: The badge at the top of this README links to [Ask Deepwiki](https://deepwiki.com/weroperking/Betterbase), where you can chat with an AI that understands your entire Betterbase project.
+
+### Using Ask Deepwiki
+
+1. **Development**: Get instant answers about your IaC layer
+2. **Debugging**: Understand query behavior and optimization
+3. **Onboarding**: New team members can ask about your architecture
+4. **Refactoring**: Get AI suggestions for improving your code
+
+---
+
 ## Contributing
 
 We welcome contributions! Please follow these steps:
@@ -431,11 +478,11 @@ betterbase/
 ├── apps/
 │   └── test-project/      # Example/test project
 ├── packages/
-│   ├── cli/               # @betterbase/cli
-│   ├── client/            # @betterbase/client
-│   └── core/              # @betterbase/core
-├── templates/             # Project templates
-└── turbo.json             # Turborepo configuration
+│   ├── cli/              # @betterbase/cli
+│   ├── client/           # @betterbase/client
+│   └── core/             # @betterbase/core
+├── templates/            # Project templates
+└── turbo.json            # Turborepo configuration
 ```
 
 ### Code Style
@@ -521,6 +568,7 @@ All notable changes to this project will be documented in this section.
 ### [1.0.0] - 2026-03-19
 
 #### Added
+
 - **AI Context Generation**: Automatic `.betterbase-context.json` generation for AI-assisted development
 - **Branch Management**: New `bb branch` command for creating isolated preview environments
 - **Vector Search**: pgvector-powered similarity search with embeddings support
@@ -528,12 +576,14 @@ All notable changes to this project will be documented in this section.
 - **Enhanced CLI**: Added 12 commands including branch, webhook management, and storage operations
 
 #### Updated
+
 - Updated copyright year to 2026
 - Improved documentation with Last Updated timestamp
 - Verified all features against current codebase structure
 - Removed deprecated @betterbase/shared package references
 
 #### Security
+
 - Improved webhook signature verification
 - Enhanced RLS policy engine
 
@@ -575,26 +625,16 @@ SOFTWARE.
 
 | Resource | Link |
 |----------|------|
-| **Documentation** | [docs.betterbase.io](https://docs.betterbase.io) |
-| **Discord** | [discord.gg/betterbase](https://discord.gg/betterbase) |
-| **GitHub Issues** | [github.com/betterbase/betterbase/issues](https://github.com/betterbase/betterbase/issues) |
-| **Stack Overflow** | [stackoverflow.com/questions/tagged/betterbase](https://stackoverflow.com/questions/tagged/betterbase) |
-
-### Stay Updated
-
-| Channel | Link |
-|---------|------|
-| **Twitter** | [@betterbase](https://twitter.com/betterbase) |
-| **Blog** | [blog.betterbase.io](https://blog.betterbase.io) |
-| **Newsletter** | [subscribe.betterbase.io](https://subscribe.betterbase.io) |
+| **Discord** | [Discord](https://discord.gg/R6Dm6Cgy2E) |
+| **GitHub Issues** | [GitHub Issues](https://github.com/weroperking/Betterbase/issues) |
 
 ### Contribute
 
 | Resource | Link |
 |----------|------|
-| **GitHub** | [github.com/betterbase/betterbase](https://github.com/betterbase/betterbase) |
+| **GitHub** | [GitHub](https://github.com/weroperking/Betterbase) |
 | **Contributing Guide** | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| **Good First Issues** | [github.com/betterbase/betterbase/labels/good%20first%20issue](https://github.com/betterbase/betterbase/labels/good%20first%20issue) |
+| **Good First Issues** | [Good First Issues](https://github.com/weroperking/Betterbase/labels/good-first-issue) |
 
 ---
 
@@ -602,6 +642,6 @@ SOFTWARE.
 
 **Built with ❤️ by Weroperking**
 
-[Website](https://betterbase.io) • [Documentation](https://docs.betterbase.io) • [Discord](https://discord.gg/betterbase) • [Twitter](https://twitter.com/betterbase)
+[Website](#) • [Documentation](docs/README.md) • [Discord](https://discord.gg/R6Dm6Cgy2E) • [GitHub](https://github.com/weroperking/Betterbase) • [Twitter](#)
 
 </div>
