@@ -128,7 +128,7 @@ bun run dev
 
 This creates the following project structure:
 
-```
+```text
 betterbase/
 ├── packages/
 │   ├── core/          # Core framework

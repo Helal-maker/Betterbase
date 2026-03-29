@@ -24,7 +24,7 @@ FROM oven/bun:1.3.9-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache wget
+RUN apk add --no-cache wget=1.25.0-r1
 
 COPY --from=builder /app/packages/server/dist ./dist
 

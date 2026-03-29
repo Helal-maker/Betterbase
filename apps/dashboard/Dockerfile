@@ -10,9 +10,9 @@
 
 FROM oven/bun:1.3.9-debian AS builder
 
-WORKDIR /app
+WORKDIR /app/apps/dashboard
 
-COPY package.json bun.lock* ./
+COPY apps/dashboard/package.json apps/dashboard/bun.lock* ./
 
 RUN bun install --frozen-lockfile
 
@@ -25,7 +25,11 @@ RUN bun run build
 
 FROM nginx:alpine
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+RUN addgroup -g 101 -S nginx && adduser -S nginx -u 101
+
+COPY --from=builder /app/apps/dashboard/dist /usr/share/nginx/html
+
+RUN chown -R nginx:nginx /usr/share/nginx/html
 
 RUN cat > /etc/nginx/conf.d/default.conf << 'EOF'
 server {
@@ -33,6 +37,12 @@ server {
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+
+    # Health check endpoint
+    location /health {
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
 
     # Cache static assets
     location /assets/ {
@@ -52,5 +62,9 @@ server {
 EOF
 
 EXPOSE 80
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=10s --retries=3 CMD wget -qO- http://localhost:80/health || exit 1
+
+USER nginx
 
 CMD ["nginx", "-g", "daemon off;"]
