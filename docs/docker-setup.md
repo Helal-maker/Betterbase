@@ -68,7 +68,7 @@ INNGEST_EVENT_KEY=$(openssl rand -hex 16)
 |---------|-----|--------------|
 | Betterbase API | http://localhost | Through nginx |
 | Dashboard | http://localhost | Admin login |
-| MinIO Console | http://localhost:9001 | minioadmin/minioadmin_password |
+| MinIO Console | http://localhost:9001 | Local dev: `betterbase/betterbase_dev_password`<br/>Self-hosted: `minioadmin/minioadmin` |
 
 ## Common Issues
 
@@ -87,8 +87,12 @@ docker compose logs postgres
 The `minio-init` service creates the bucket automatically. If it fails:
 
 ```bash
-# Manually create bucket
-docker compose exec minio mc alias set local http://localhost:9000 minioadmin minioadmin_password
+# For local development (docker-compose.yml)
+docker compose exec minio mc alias set local http://localhost:9000 betterbase betterbase_dev_password
+docker compose exec minio mc mb local/betterbase
+
+# For self-hosted (docker-compose.self-hosted.yml)
+docker compose exec minio mc alias set local http://localhost:9000 minioadmin minioadmin
 docker compose exec minio mc mb local/betterbase
 ```
 
@@ -155,3 +159,15 @@ docker compose up -d --build betterbase-server
 | Storage | Docker MinIO | Docker, R2, S3, or B2 |
 | SSL/TLS | Not needed | Required (use Traefik/Caddy) |
 | Inngest | Dev mode | Production mode |
+
+## Alternative: External Services
+
+Instead of running everything with Docker, you can use managed services:
+
+```yaml
+# docker-compose.production.yml
+# Use external PostgreSQL (Neon, Supabase, RDS)
+# Use external storage (Cloudflare R2, AWS S3)
+```
+
+See `docker-compose.production.yml` for a configuration that assumes external services.

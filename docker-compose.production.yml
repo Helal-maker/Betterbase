@@ -1,163 +1,132 @@
 # ============================================================================
 # Betterbase Production Docker Compose
 #
-# Production-ready configuration with:
-# - PostgreSQL (managed externally or via this compose)
-# - S3-compatible storage (Cloudflare R2, MinIO, etc.)
-# - Health checks
-# - Proper security settings
+# Production-ready configuration with all services.
+# Requires .env file with proper values.
 #
 # Usage:
-#   docker-compose -f docker-compose.production.yml up -d
-#
-# For production, it's recommended to:
-# 1. Use external managed database (Neon, Supabase, RDS, etc.)
-# 2. Use external S3 storage (R2, S3, B2)
-# 3. Use a reverse proxy (Caddy, Nginx, Traefik)
-# 4. Enable SSL/TLS
+#   cp .env.example .env
+#   # Edit .env with your values
+#   docker compose -f docker-compose.production.yml up -d
 # ============================================================================
 
 services:
-  # --------------------------------------------------------------------------
-  # Betterbase Application
-  # --------------------------------------------------------------------------
-  app:
+  postgres:
+    image: postgres:16-alpine
+    container_name: betterbase-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-betterbase}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-betterbase}
+      POSTGRES_DB: ${POSTGRES_DB:-betterbase}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-betterbase}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - betterbase-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: betterbase-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - betterbase-network
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: betterbase-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 ${STORAGE_ACCESS_KEY:-minioadmin} ${STORAGE_SECRET_KEY:-minioadmin};
+        mc mb --ignore-existing local/betterbase;
+        echo 'MinIO bucket initialized.';
+      "
+    networks:
+      - betterbase-network
+
+  inngest:
+    image: inngest/inngest:v1.17.5
+    container_name: betterbase-inngest
+    restart: unless-stopped
+    command: inngest dev --host 0.0.0.0 --port 8288
+    environment:
+      INNGEST_LOG_LEVEL: ${INNGEST_LOG_LEVEL:-info}
+    volumes:
+      - inngest_data:/data
+    networks:
+      - betterbase-network
+
+  betterbase-server:
     build:
       context: .
-      dockerfile: Dockerfile.project
-      args:
-        # Build arguments
-        NODE_ENV: production
-    expose:
-      - "3000"
+      dockerfile: packages/server/Dockerfile
+    container_name: betterbase-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      inngest:
+        condition: service_started
     environment:
-      # Database - UPDATE THIS for your managed PostgreSQL
-      DATABASE_URL: ${DATABASE_URL}
-      
-      # Auth - IMPORTANT: Generate a secure secret in production
-      AUTH_SECRET: ${AUTH_SECRET}
-      AUTH_URL: ${AUTH_URL:-https://your-domain.com}
-      
-      # Storage - S3-compatible
-      STORAGE_PROVIDER: ${STORAGE_PROVIDER:-r2}
-      STORAGE_BUCKET: ${STORAGE_BUCKET:-betterbase-storage}
-      STORAGE_REGION: ${STORAGE_REGION:-auto}
-      # For R2/S3-compatible
-      STORAGE_ENDPOINT: ${STORAGE_ENDPOINT:-https://your-r2-endpoint.r2.cloudflarestorage.com}
-      STORAGE_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY_ID}
-      STORAGE_SECRET_ACCESS_KEY: ${STORAGE_SECRET_ACCESS_KEY}
-      
-      # Node environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-betterbase}:${POSTGRES_PASSWORD:-betterbase}@postgres:5432/${POSTGRES_DB:-betterbase}
+      AUTH_SECRET: ${AUTH_SECRET:-change-this-in-production}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      STORAGE_ENDPOINT: http://minio:9000
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-minioadmin}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-minioadmin}
+      STORAGE_BUCKET: betterbase
+      PORT: "3001"
       NODE_ENV: production
-      PORT: "3000"
-      HOST: "0.0.0.0"
-      
-      # Security
-      CORS_ORIGIN: ${CORS_ORIGIN:-https://your-domain.com}
-      
-      # Optional: Logging
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      
-    restart: always
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      INNGEST_BASE_URL: http://inngest:8288
+      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY:-}
+      INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY:-}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
-      - betterbase-prod
+      - betterbase-network
 
-  # --------------------------------------------------------------------------
-  # Optional: Self-hosted PostgreSQL (if not using managed)
-  # Remove this service if using Neon, Supabase, RDS, etc.
-  # --------------------------------------------------------------------------
-  # postgres:
-  #   image: postgres:16-alpine
-  #   environment:
-  #     POSTGRES_USER: ${DB_USER:-betterbase}
-  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
-  #     POSTGRES_DB: ${DB_NAME:-betterbase}
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   restart: always
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-betterbase} -d ${DB_NAME:-betterbase}"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   networks:
-  #     - betterbase-prod
-  #   # Only expose ports if needed for debugging
-  #   # ports:
-  #   #   - "5432:5432"
+  dashboard:
+    image: nginx:alpine
+    container_name: betterbase-dashboard
+    restart: unless-stopped
+    volumes:
+      - ./apps/dashboard/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - betterbase-server
+    networks:
+      - betterbase-network
 
-  # --------------------------------------------------------------------------
-  # Optional: MinIO for self-hosted S3 storage
-  # Remove this service if using R2, S3, B2
-  # --------------------------------------------------------------------------
-  # minio:
-  #   image: minio/minio:latest
-  #   command: server /data --console-address ":9001"
-  #   environment:
-  #     MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-  #     MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-  #   volumes:
-  #     - minio_data:/data
-  #   restart: always
-  #   networks:
-  #     - betterbase-prod
-
-  # --------------------------------------------------------------------------
-  # Optional: Traefik reverse proxy (uncomment for automatic HTTPS)
-  # --------------------------------------------------------------------------
-  # traefik:
-  #   image: traefik:v3.0
-  #   command:
-  #     - "--api.insecure=true"
-  #     - "--providers.docker=true"
-  #     - "--providers.docker.exposedbydefault=false"
-  #     - "--entrypoints.web.address=:80"
-  #     - "--entrypoints.websecure.address=:443"
-  #     - "--certificatesresolvers.letsencrypt.acme.email=your@email.com"
-  #     - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-  #     - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #     - "8080:8080"
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #     - letsencrypt_data:/letsencrypt
-  #   networks:
-  #     - betterbase-prod
-
-  # --------------------------------------------------------------------------
-  # Optional: Caddy reverse proxy (simpler than Traefik)
-  # --------------------------------------------------------------------------
-  # caddy:
-  #   image: caddy:2-alpine
-  #   volumes:
-  #     - ./Caddyfile:/etc/caddy/Caddyfile
-  #     - caddy_data:/data
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   networks:
-  #     - betterbase-prod
-
-# ----------------------------------------------------------------------------
-# Networks
-# ----------------------------------------------------------------------------
-networks:
-  betterbase-prod:
-    driver: bridge
-
-# ----------------------------------------------------------------------------
-# Volumes
-# ----------------------------------------------------------------------------
 volumes:
-  # postgres_data:
-  # minio_data:
-  # letsencrypt_data:
-  # caddy_data:
+  postgres_data:
+  minio_data:
+  inngest_data:
+
+networks:
+  betterbase-network:
+    driver: bridge

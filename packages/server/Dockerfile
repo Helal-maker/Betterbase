@@ -4,6 +4,7 @@ WORKDIR /app
 
 RUN apk add --no-cache git
 
+# Copy monorepo structure (only what server needs)
 COPY package.json turbo.json bun.lock ./
 COPY packages/server/package.json ./packages/server/
 COPY packages/core/package.json ./packages/core/
@@ -18,11 +19,12 @@ COPY tsconfig.base.json ./
 
 RUN cd packages/server && bun build src/index.ts --outdir dist --target bun
 
+# --- Runtime stage ---
 FROM oven/bun:1.3.9-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache wget
+RUN apk add --no-cache wget=1.25.0-r1
 
 COPY --from=builder /app/packages/server/dist ./dist
 

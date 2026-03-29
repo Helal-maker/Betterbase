@@ -49,6 +49,12 @@ docker --version
 docker compose version
 ```
 
+Verify the installation:
+
+```bash
+bun --version
+```
+
 ## Installing BetterBase CLI
 
 The BetterBase CLI (`bb`) is your primary tool for managing projects and deployments.
@@ -122,7 +128,7 @@ bun run dev
 
 This creates the following project structure:
 
-```
+```text
 betterbase/
 ├── packages/
 │   ├── core/          # Core framework
