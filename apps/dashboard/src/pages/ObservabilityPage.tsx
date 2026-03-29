@@ -133,7 +133,7 @@ export default function ObservabilityPage() {
 									fontSize={11}
 								/>
 								<YAxis stroke="var(--color-text-muted)" fontSize={11} />
-								<Toltip
+								<Tooltip
 									contentStyle={{
 										background: "var(--color-surface)",
 										border: "1px solid var(--color-border)",

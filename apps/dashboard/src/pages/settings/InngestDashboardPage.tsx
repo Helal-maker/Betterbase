@@ -46,14 +46,15 @@ function getStatusIcon(status: string) {
 }
 
 function getStatusBadge(status: string) {
-	const variants: Record<string, "success" | "error" | "warning" | "info" | "default"> = {
-		complete: "success",
-		active: "success",
-		failed: "error",
-		running: "info",
-		pending: "warning",
-		paused: "default",
-	};
+	const variants: Record<string, "success" | "destructive" | "warning" | "secondary" | "default"> =
+		{
+			complete: "success",
+			active: "success",
+			failed: "destructive",
+			running: "secondary",
+			pending: "warning",
+			paused: "default",
+		};
 	return <Badge variant={variants[status] ?? "default"}>{status}</Badge>;
 }
 
