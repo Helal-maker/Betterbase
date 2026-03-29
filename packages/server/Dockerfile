@@ -1,6 +1,8 @@
-FROM oven/bun:1.2-alpine AS builder
+FROM oven/bun:1.3.9-alpine AS builder
 
 WORKDIR /app
+
+RUN apk add --no-cache git
 
 # Copy monorepo structure (only what server needs)
 COPY package.json turbo.json bun.lock ./
@@ -18,12 +20,13 @@ COPY tsconfig.base.json ./
 RUN cd packages/server && bun build src/index.ts --outdir dist --target bun
 
 # --- Runtime stage ---
-FROM oven/bun:1.2-alpine
+FROM oven/bun:1.3.9-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache wget
+
 COPY --from=builder /app/packages/server/dist ./dist
-COPY --from=builder /app/packages/server/migrations ./migrations
 
 # Health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
