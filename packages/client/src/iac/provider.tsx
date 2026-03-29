@@ -1,16 +1,15 @@
 import React, { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
+import type { BetterBaseConfig } from "../types";
 
-export interface BetterBaseConfig {
-	/** Base URL of the BetterBase server */
-	url: string;
+export type BetterBaseReactConfig = BetterBaseConfig & {
 	/** Project slug — routes db queries to the right schema */
 	projectSlug?: string;
 	/** Token getter — called on each request */
 	getToken?: () => string | null;
-}
+};
 
 interface BetterBaseContextValue {
-	config: BetterBaseConfig;
+	config: BetterBaseReactConfig;
 	ws: WebSocket | null;
 	wsReady: boolean;
 	getToken: (() => string | null) | undefined;
@@ -21,7 +20,7 @@ const BetterBaseContext = createContext<BetterBaseContextValue | null>(null);
 export function BetterbaseProvider({
 	config,
 	children,
-}: { config: BetterBaseConfig; children: ReactNode }) {
+}: { config: BetterBaseReactConfig; children: ReactNode }) {
 	const wsRef = useRef<WebSocket | null>(null);
 	const [wsReady, setWsReady] = React.useState(false);
 

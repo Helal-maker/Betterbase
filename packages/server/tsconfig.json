@@ -2,9 +2,10 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"outDir": "dist",
-		"rootDir": "src",
+		"rootDir": ".",
 		"types": ["bun-types"],
-		"moduleResolution": "Bundler"
+		"moduleResolution": "Bundler",
+		"skipLibCheck": true
 	},
-	"include": ["src/**/*", "migrations/**/*", "src/types.d.ts"]
+	"include": ["src/**/*", "migrations/**/*", "src/types.d.ts", "test/**/*"]
 }

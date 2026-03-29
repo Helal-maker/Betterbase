@@ -42,7 +42,9 @@ export async function runDevCommand(projectRoot: string) {
 
 	// --- Start context generator watcher (existing behavior) ---
 	const ctxGen = new ContextGenerator();
-	await ctxGen.generate(projectRoot).catch(() => {});
+	await ctxGen.generate(projectRoot).catch((e: Error) => {
+		error(`Context generation failed: ${e.message}`);
+	});
 
 	// --- Start file watcher ---
 	const watcher = new DevWatcher({ debounceMs: 150 });
@@ -92,7 +94,9 @@ export async function runDevCommand(projectRoot: string) {
 		}
 
 		// Regenerate context on every change
-		ctxGen.generate(projectRoot).catch(() => {});
+		ctxGen.generate(projectRoot).catch((e: Error) => {
+			warn(`Context regeneration failed: ${e.message}`);
+		});
 	});
 
 	watcher.start(projectRoot);

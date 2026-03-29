@@ -31,7 +31,7 @@ export type {
 export type { User, Session } from "./auth";
 
 // IaC exports
-export { BetterbaseProvider, useBetterBaseContext, type BetterBaseConfig } from "./iac/provider";
+export { BetterbaseProvider, useBetterBaseContext } from "./iac/provider";
 export {
 	useQuery,
 	useMutation,

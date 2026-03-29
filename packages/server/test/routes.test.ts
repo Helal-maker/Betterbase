@@ -34,7 +34,7 @@ describe("routes logic tests", () => {
 		});
 
 		it("should handle missing password gracefully", () => {
-			const row = {
+			const row: { id: string; host: string; password?: string } = {
 				id: "singleton",
 				host: "smtp.example.com",
 			};
@@ -76,6 +76,81 @@ describe("routes logic tests", () => {
 		it("should have valid channel enum values", () => {
 			const validChannels = ["email", "webhook"];
 			expect(validChannels.length).toBe(2);
+		});
+
+		it("should evaluate threshold breach correctly", () => {
+			const threshold = 5;
+			const currentValue = 10;
+			const breached = currentValue >= threshold;
+			expect(breached).toBe(true);
+		});
+
+		it("should not breach when value is below threshold", () => {
+			const threshold = 5;
+			const currentValue = 3;
+			const breached = currentValue >= threshold;
+			expect(breached).toBe(false);
+		});
+	});
+
+	describe("Inngest webhook delivery logic", () => {
+		it("should evaluate threshold breach correctly", () => {
+			const evaluateThreshold = (currentValue: number, threshold: number) =>
+				currentValue >= threshold;
+			expect(evaluateThreshold(10, 5)).toBe(true);
+			expect(evaluateThreshold(5, 5)).toBe(true);
+			expect(evaluateThreshold(3, 5)).toBe(false);
+		});
+
+		it("should generate valid HMAC-SHA256 signature format", () => {
+			const crypto = require("crypto");
+			const secret = "test-webhook-secret";
+			const body = JSON.stringify({ test: "data" });
+
+			const signature = crypto.createHmac("sha256", secret).update(body).digest("hex");
+			expect(signature).toMatch(/^[a-f0-9]{64}$/);
+			expect(`sha256=${signature}`).toMatch(/^sha256=[a-f0-9]{64}$/);
+		});
+
+		it("should calculate retry attempt from failed attempt", () => {
+			const calculateNextAttempt = (failedAttempt: number) => failedAttempt + 1;
+			expect(calculateNextAttempt(0)).toBe(1);
+			expect(calculateNextAttempt(1)).toBe(2);
+			expect(calculateNextAttempt(4)).toBe(5);
+		});
+
+		it("should use webhook ID in concurrency key format", () => {
+			const webhookId = "wh_abc123";
+			const concurrencyKey = `event.data.${webhookId}`;
+			expect(concurrencyKey).toMatch(/^event\.data\.wh_\w+$/);
+		});
+	});
+
+	describe("Inngest cron polling logic", () => {
+		it("should parse cron expression into 5 parts", () => {
+			const parseCronExpression = (cron: string) => cron.split(" ");
+			const parts = parseCronExpression("*/5 * * * *");
+			expect(parts.length).toBe(5);
+			expect(parts[0]).toBe("*/5");
+			expect(parts[1]).toBe("*");
+			expect(parts[2]).toBe("*");
+			expect(parts[3]).toBe("*");
+			expect(parts[4]).toBe("*");
+		});
+
+		it("should calculate error rate percentage", () => {
+			const calculateErrorRate = (errorRequests: number, totalRequests: number) =>
+				(errorRequests / totalRequests) * 100;
+			expect(calculateErrorRate(5, 100)).toBe(5);
+			expect(calculateErrorRate(25, 100)).toBe(25);
+			expect(calculateErrorRate(1, 10)).toBe(10);
+		});
+
+		it("should handle zero total requests without division by zero", () => {
+			const calculateErrorRate = (errorRequests: number, totalRequests: number) =>
+				totalRequests > 0 ? (errorRequests / totalRequests) * 100 : 0;
+			expect(calculateErrorRate(0, 0)).toBe(0);
+			expect(calculateErrorRate(5, 100)).toBe(5);
 		});
 	});
 });

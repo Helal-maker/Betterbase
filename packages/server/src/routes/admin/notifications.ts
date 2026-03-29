@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { getPool } from "../../lib/db";
+import { inngest } from "../../lib/inngest";
 
 export const notificationRoutes = new Hono();
 
@@ -65,4 +66,34 @@ notificationRoutes.delete("/:id", async (c) => {
 	);
 	if (rows.length === 0) return c.json({ error: "Not found" }, 404);
 	return c.json({ success: true });
+});
+
+// POST /admin/notifications/:id/test  — manually trigger evaluation of a single rule
+notificationRoutes.post("/:id/test", async (c) => {
+	const pool = getPool();
+	const { rows } = await pool.query(
+		"SELECT * FROM betterbase_meta.notification_rules WHERE id = $1",
+		[c.req.param("id")],
+	);
+	if (rows.length === 0) return c.json({ error: "Not found" }, 404);
+
+	const rule = rows[0];
+
+	await inngest.send({
+		name: "betterbase/notification.evaluate",
+		data: {
+			ruleId: rule.id,
+			ruleName: rule.name,
+			metric: rule.metric,
+			threshold: Number.parseFloat(rule.threshold),
+			channel: rule.channel,
+			target: rule.target,
+			currentValue: Number.parseFloat(rule.threshold) + 1, // Artificially breach threshold for test
+		},
+	});
+
+	return c.json({
+		success: true,
+		message: "Test notification queued via Inngest. Check the Inngest dashboard for trace.",
+	});
 });

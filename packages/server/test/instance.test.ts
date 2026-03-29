@@ -5,7 +5,7 @@ import { instanceRoutes } from "../src/routes/admin/instance";
 
 // Mock the db module
 const mockPool = {
-	query: mock(() => Promise.resolve({ rows: [] })),
+	query: mock(() => Promise.resolve({ rows: [] as any[] })),
 };
 
 mock.module("../src/lib/db", () => ({
@@ -27,7 +27,7 @@ describe("instance routes", () => {
 				rows: [
 					{ key: "instance_name", value: "Betterbase", updated_at: new Date() },
 					{ key: "public_url", value: "http://localhost", updated_at: new Date() },
-				],
+				] as any[],
 			});
 
 			// Simulate the route handler

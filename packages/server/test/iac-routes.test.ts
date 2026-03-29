@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { projectIaCRoutes } from "../src/routes/admin/project-scoped/iac";
 
 const mockPool = {
-	query: mock(() => Promise.resolve({ rows: [], fields: [] })),
+	query: mock(() => Promise.resolve({ rows: [] as any[], fields: [] as any[] })),
 };
 
 mock.module("../src/lib/db", () => ({
@@ -17,7 +17,7 @@ describe("IaC Routes", () => {
 		mockPool.query.mockClear();
 		app = new Hono();
 		app.use("/:projectId/*", async (c, next) => {
-			c.set("project", { id: "proj-123", slug: "test-project" });
+			c.set("project", { id: "proj-123", name: "Test Project", slug: "test-project" });
 			await next();
 		});
 		app.route("/:projectId/iac", projectIaCRoutes);
@@ -27,16 +27,19 @@ describe("IaC Routes", () => {
 		it("should return schema with tables and columns", async () => {
 			mockPool.query
 				.mockResolvedValueOnce({
-					rows: [{ table_name: "users" }, { table_name: "posts" }],
+					rows: [{ table_name: "users" }, { table_name: "posts" }] as any[],
+					fields: [] as any[],
 				})
 				.mockResolvedValueOnce({
 					rows: [
 						{ column_name: "id", data_type: "uuid", is_nullable: "NO", column_default: null },
 						{ column_name: "name", data_type: "text", is_nullable: "YES", column_default: null },
-					],
+					] as any[],
+					fields: [] as any[],
 				})
 				.mockResolvedValueOnce({
-					rows: [{ indexname: "users_pkey", indexdef: "CREATE PRIMARY KEY" }],
+					rows: [{ indexname: "users_pkey", indexdef: "CREATE PRIMARY KEY" }] as any[],
+					fields: [] as any[],
 				});
 
 			const res = await app.request("/proj-123/iac/schema");
@@ -47,7 +50,7 @@ describe("IaC Routes", () => {
 		});
 
 		it("should handle empty schema", async () => {
-			mockPool.query.mockResolvedValueOnce({ rows: [] });
+			mockPool.query.mockResolvedValueOnce({ rows: [] as any[], fields: [] as any[] });
 
 			const res = await app.request("/proj-123/iac/schema");
 			const body = await res.json();
@@ -73,7 +76,8 @@ describe("IaC Routes", () => {
 						path: "mutations/posts/createPost",
 						module: "/app/betterbase/mutations/posts.ts",
 					},
-				],
+				] as any[],
+				fields: [] as any[],
 			});
 
 			const res = await app.request("/proj-123/iac/functions");
@@ -86,7 +90,7 @@ describe("IaC Routes", () => {
 		});
 
 		it("should handle empty functions", async () => {
-			mockPool.query.mockResolvedValueOnce({ rows: [] });
+			mockPool.query.mockResolvedValueOnce({ rows: [] as any[], fields: [] as any[] });
 
 			const res = await app.request("/proj-123/iac/functions");
 			const body = await res.json();
@@ -109,7 +113,8 @@ describe("IaC Routes", () => {
 						next_run: "2024-01-01",
 						last_run: null,
 					},
-				],
+				] as any[],
+				fields: [] as any[],
 			});
 
 			const res = await app.request("/proj-123/iac/jobs");
@@ -124,11 +129,15 @@ describe("IaC Routes", () => {
 	describe("GET /:projectId/iac/realtime", () => {
 		it("should return realtime stats", async () => {
 			mockPool.query
-				.mockResolvedValueOnce({ rows: [{ active_connections: "5" }] })
+				.mockResolvedValueOnce({
+					rows: [{ active_connections: "5" }] as any[],
+					fields: [] as any[],
+				})
 				.mockResolvedValueOnce({
 					rows: [
 						{ event_type: "INSERT", table_name: "users", count: "10", last_event: "2024-01-01" },
-					],
+					] as any[],
+					fields: [] as any[],
 				});
 
 			const res = await app.request("/proj-123/iac/realtime");
@@ -143,8 +152,8 @@ describe("IaC Routes", () => {
 	describe("POST /:projectId/iac/query", () => {
 		it("should execute SELECT query", async () => {
 			mockPool.query.mockResolvedValueOnce({
-				rows: [{ id: "1", name: "Test" }],
-				fields: [{ name: "id" }, { name: "name" }],
+				rows: [{ id: "1", name: "Test" }] as any[],
+				fields: [{ name: "id" }, { name: "name" }] as any[],
 			});
 
 			const res = await app.request("/proj-123/iac/query", {

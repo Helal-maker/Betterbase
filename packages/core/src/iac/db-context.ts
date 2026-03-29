@@ -299,6 +299,12 @@ export class DatabaseWriter extends DatabaseReader {
 		await this.patch(table, id, data);
 	}
 
+	/** Delete a document by ID */
+	async delete(table: string, id: string): Promise<void> {
+		await this._pool.query(`DELETE FROM "${this._schema}"."${table}" WHERE _id = $1`, [id]);
+		this._emitChange(table, "DELETE", id);
+	}
+
 	/** Execute raw SQL. Supports SELECT, INSERT, UPDATE, DELETE.
 	 * Automatically prefixes tables with project schema.
 	 * WARNING: Be careful with write operations - they bypass transaction safety. */
