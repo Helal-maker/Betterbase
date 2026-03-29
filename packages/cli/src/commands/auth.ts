@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import * as logger from "../utils/logger";
 import { confirm } from "../utils/prompts";
-import { getProviderTemplate, getAvailableProviders } from "./auth-providers";
+import { getAvailableProviders, getProviderTemplate } from "./auth-providers";
 
 const AUTH_INSTANCE_FILE = (provider: string) => `import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
@@ -302,7 +302,13 @@ export async function runAuthSetupCommand(
 
 	// Install better-auth
 	logger.info("📦 Installing better-auth...");
-	execSync("bun add better-auth", { cwd: resolvedRoot, stdio: "inherit" });
+	try {
+		execSync("bun add better-auth", { cwd: resolvedRoot, stdio: "inherit" });
+	} catch (error: any) {
+		logger.warn(
+			`Could not install better-auth automatically: ${error.message}. Please run "bun add better-auth" manually.`,
+		);
+	}
 
 	// Create src/auth directory
 	const authDir = path.join(srcDir, "auth");
@@ -377,9 +383,7 @@ export async function runAuthAddProviderCommand(
 	// Check if auth file exists
 	const authFile = path.join(resolvedRoot, "src", "auth", "index.ts");
 	if (!existsSync(authFile)) {
-		logger.error(
-			`Auth file not found at ${authFile}. Run 'bb auth setup' first.`,
-		);
+		logger.error(`Auth file not found at ${authFile}. Run 'bb auth setup' first.`);
 		process.exit(1);
 	}
 
@@ -392,17 +396,17 @@ export async function runAuthAddProviderCommand(
 	}
 
 	// Find socialProviders section
-	const socialRegex = /socialProviders:\s*\{([\s\S]*?)\n  \}/;
+	const socialRegex = /socialProviders:\s*\{([\s\S]*?)\n {2}\}/;
 	const match = authContent.match(socialRegex);
 
 	if (match) {
 		// Add to existing socialProviders - find the closing brace of the last provider
 		const existing = match[1];
-		
+
 		// Check if existing content ends with a closing brace (provider object)
 		const trimmed = existing.trim();
 		let newContent: string;
-		
+
 		if (trimmed.endsWith("}")) {
 			// Add comma and new provider
 			newContent = `${trimmed.slice(0, -1)},\n${template.configCode}\n  }`;
@@ -410,10 +414,7 @@ export async function runAuthAddProviderCommand(
 			newContent = `${trimmed}\n${template.configCode}\n  }`;
 		}
 
-		authContent = authContent.replace(
-			socialRegex,
-			`socialProviders: {\n${newContent}`,
-		);
+		authContent = authContent.replace(socialRegex, `socialProviders: {\n${newContent}`);
 	} else {
 		// Create socialProviders section
 		authContent = authContent.replace(

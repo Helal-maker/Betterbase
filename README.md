@@ -8,6 +8,8 @@ Betterbase is an open-source alternative to Supabase, built with Bun for blazing
 
 **Last Updated: 2026-03-28**
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/weroperking/Betterbase)
+
 </div>
 
 ---
@@ -18,20 +20,20 @@ Traditional backend development is slow. You spend weeks setting up databases, a
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│                           BETTERBASE ARCHITECTURE                               │
+│                           BETTERBASE ARCHITECTURE                              │
 ├────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                │
-│  ┌─────────────────┐        ┌────────────────────────────┐    ┌─────────────┐ │
-│  │    Frontend     │        │      Betterbase Core       │    │  Database   │ │
-│  │   (React,       │───────▶│                             │───▶│  (SQLite,   │ │
-│  │    Vue,         │        │  Auth │ Realtime │ Storage  │    │   Postgres) │ │
-│  │    Mobile)      │        │  RLS  │ Vector   │ Functions│    └─────────────┘ │
+│  ┌─────────────────┐        ┌──────-──────────────────────┐     ┌────────────┐  │
+│  │    Frontend     │        │       Betterbase Core       │     │  Database  │  │
+│  │   (React,       │─────▶ |                             │───▶│  (SQLite,  │  │
+│  │    Vue,         │        │  Auth │ Realtime │ Storage  │    │   Postgres)│  │
+│  │    Mobile)      │        │  RLS  │ Vector   │ Functions│    └────────────┘  │
 │  └─────────────────┘        └────────────────────────────┘                     │
-│                                │                                                │
-│                         ┌──────▼──────┐                                         │
-│                         │  IaC Layer  │ (Convex-inspired)                       │
-│                         │  betterbase/ │ (Convex-inspired)                       │
-│                         └─────────────┘                                         │
+│                                │                                               │
+│                         ┌──────▼──────┐                                        │
+│                         │  IaC Layer  │ (Convex-inspired)                      │
+│                         │  betterbase/ │ (Convex-inspired)                     │
+│                         └─────────────┘                                        │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -598,7 +600,7 @@ SOFTWARE.
 
 <div align="center">
 
-**Built with ❤️ using Weroperking**
+**Built with ❤️ by Weroperking**
 
 [Website](https://betterbase.io) • [Documentation](https://docs.betterbase.io) • [Discord](https://discord.gg/betterbase) • [Twitter](https://twitter.com/betterbase)
 

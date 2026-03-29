@@ -12,7 +12,12 @@ const getInngestHeaders = async (): Promise<HeadersInit> => {
 	const { rows } = await pool.query(
 		"SELECT value FROM betterbase_meta.instance_settings WHERE key = 'inngest_api_key'",
 	);
-	const apiKey = rows[0]?.value ?? process.env.INNGEST_API_KEY ?? "";
+	// Handle JSON string values from instance_settings
+	const storedValue = rows[0]?.value;
+	const apiKey =
+		typeof storedValue === "string"
+			? storedValue
+			: (storedValue?.value ?? process.env.INNGEST_API_KEY ?? "");
 	return {
 		"Content-Type": "application/json",
 		...(apiKey && { Authorization: `Bearer ${apiKey}` }),
@@ -24,12 +29,23 @@ const getInngestEnv = async (): Promise<string | null> => {
 	const { rows } = await pool.query(
 		"SELECT value FROM betterbase_meta.instance_settings WHERE key = 'inngest_env_id'",
 	);
-	return rows[0]?.value ?? null;
+	const storedValue = rows[0]?.value;
+	return typeof storedValue === "string" ? storedValue : (storedValue?.value ?? null);
 };
 
 const isSelfHosted = (): boolean => {
 	const baseUrl = getInngestBaseUrl();
 	return baseUrl !== "https://api.inngest.com";
+};
+
+// Helper to check fetch response and handle errors
+const fetchWithErrorCheck = async (url: string, options?: RequestInit) => {
+	const res = await fetch(url, options);
+	const data = await res.json().catch(() => ({}));
+	if (!res.ok) {
+		throw new Error(data.error ?? data.message ?? `HTTP ${res.status}`);
+	}
+	return data;
 };
 
 // GET /admin/inngest/status — Check Inngest connection status
@@ -75,7 +91,7 @@ inngestAdminRoutes.get("/functions", async (c) => {
 		if (isSelfHosted()) {
 			// Self-hosted Inngest has different API structure
 			// Return local functions from inngest.ts
-			const { inngest, allInngestFunctions } = await import("../../lib/inngest");
+			const { allInngestFunctions } = await import("../../lib/inngest");
 
 			const functions = allInngestFunctions.map((fn) => ({
 				id: fn.id,
@@ -90,8 +106,7 @@ inngestAdminRoutes.get("/functions", async (c) => {
 
 		const url = envId ? `${baseUrl}/v1/environments/${envId}/functions` : `${baseUrl}/v1/functions`;
 
-		const res = await fetch(url, { headers });
-		const data = await res.json();
+		const data = await fetchWithErrorCheck(url, { headers });
 
 		return c.json({ functions: data.functions ?? [] });
 	} catch (err: any) {
@@ -114,11 +129,12 @@ inngestAdminRoutes.get("/functions/:id/runs", async (c) => {
 		if (status) params.append("status", status);
 
 		if (isSelfHosted()) {
-			// Self-hosted: query from database webhook_deliveries
+			// Self-hosted: query from database webhook_deliveries by webhook_id
+			// Note: functionId in routes refers to webhook ID for webhook deliveries
 			const pool = getPool();
 			const { rows } = await pool.query(
-				`SELECT id, webhook_id as function_id, status, created_at as started_at, 
-                delivered_at as ended_at, response_code, duration_ms
+				`SELECT id, webhook_id, status, created_at as started_at, 
+                delivered_at as ended_at, response_code, duration_ms, response_body
          FROM betterbase_meta.webhook_deliveries
          WHERE webhook_id = $1
          ORDER BY created_at DESC
@@ -128,11 +144,12 @@ inngestAdminRoutes.get("/functions/:id/runs", async (c) => {
 
 			const runs = rows.map((r: any) => ({
 				id: r.id,
-				functionId: r.function_id,
+				functionId: r.webhook_id,
 				status: r.status === "success" ? "complete" : r.status === "pending" ? "pending" : "failed",
 				startedAt: r.started_at,
 				endedAt: r.ended_at,
 				output: r.response_code ? `HTTP ${r.response_code} (${r.duration_ms}ms)` : null,
+				error: r.status === "failed" ? r.response_body : undefined,
 			}));
 
 			return c.json({ runs });
@@ -142,8 +159,7 @@ inngestAdminRoutes.get("/functions/:id/runs", async (c) => {
 			? `${baseUrl}/v1/environments/${envId}/functions/${functionId}/runs?${params}`
 			: `${baseUrl}/v1/functions/${functionId}/runs?${params}`;
 
-		const res = await fetch(url, { headers });
-		const data = await res.json();
+		const data = await fetchWithErrorCheck(url, { headers });
 
 		return c.json({ runs: data.runs ?? [] });
 	} catch (err: any) {
@@ -179,6 +195,7 @@ inngestAdminRoutes.get("/runs/:runId", async (c) => {
 				startedAt: r.created_at,
 				endedAt: r.delivered_at,
 				output: r.response_body,
+				error: r.status === "failed" ? r.response_body : undefined,
 				history: [{ name: "send-http-request", status: r.status, output: r.response_body }],
 			});
 		}
@@ -187,8 +204,7 @@ inngestAdminRoutes.get("/runs/:runId", async (c) => {
 			? `${baseUrl}/v1/environments/${envId}/runs/${runId}`
 			: `${baseUrl}/v1/runs/${runId}`;
 
-		const res = await fetch(url, { headers });
-		const data = await res.json();
+		const data = await fetchWithErrorCheck(url, { headers });
 
 		return c.json(data);
 	} catch (err: any) {
@@ -196,42 +212,85 @@ inngestAdminRoutes.get("/runs/:runId", async (c) => {
 	}
 });
 
-// POST /admin/inngest/functions/:id/test — Trigger test event
+// POST /admin/inngest/functions/:id/test — Trigger test event with function-specific payload
 inngestAdminRoutes.post("/functions/:id/test", async (c) => {
 	try {
 		const functionId = c.req.param("id");
 
-		const functionEventMap: Record<string, string> = {
-			"deliver-webhook": "betterbase/webhook.deliver",
-			"evaluate-notification-rule": "betterbase/notification.evaluate",
-			"export-project-users": "betterbase/export.users",
-			"poll-notification-rules": "betterbase/notification.evaluate",
+		// Map function IDs to event names and test payloads
+		const functionConfig: Record<string, { eventName: string; payload: any }> = {
+			"deliver-webhook": {
+				eventName: "betterbase/webhook.deliver",
+				payload: {
+					webhookId: "test-webhook-id",
+					webhookName: "Test Webhook",
+					url: "https://example.com/webhook",
+					secret: null,
+					eventType: "TEST",
+					tableName: "users",
+					payload: { id: "test-123", example: "data", _test: true },
+					attempt: 1,
+				},
+			},
+			"evaluate-notification-rule": {
+				eventName: "betterbase/notification.evaluate",
+				payload: {
+					ruleId: "test-rule-id",
+					ruleName: "Test Alert Rule",
+					metric: "error_rate",
+					threshold: 5,
+					channel: "email",
+					target: "admin@example.com",
+					currentValue: 10, // Above threshold for testing
+				},
+			},
+			"export-project-users": {
+				eventName: "betterbase/export.users",
+				payload: {
+					projectId: "test-project-id",
+					projectSlug: "test-project",
+					requestedBy: "admin@example.com",
+					filters: { search: "test" },
+				},
+			},
+			"poll-notification-rules": {
+				// Cron-triggered function - can't be manually triggered
+				eventName: "betterbase/notification.evaluate",
+				payload: {
+					ruleId: "cron-test",
+					ruleName: "Cron Test",
+					metric: "error_rate",
+					threshold: 0,
+					channel: "email",
+					target: "admin@example.com",
+					currentValue: 100,
+				},
+			},
 		};
 
-		const eventName = functionEventMap[functionId];
-		if (!eventName) {
-			// Try to derive from function ID
-			const mapped = Object.entries(functionEventMap).find(([k]) => functionId.includes(k));
-			if (mapped) {
-				eventName = mapped[1];
-			} else {
-				return c.json({ error: "Unknown function type" }, 400);
+		// Find matching function config
+		let config = functionConfig[functionId];
+		if (!config) {
+			// Try to find by partial match
+			const entry = Object.entries(functionConfig).find(([k]) => functionId.includes(k));
+			if (entry) {
+				config = entry[1];
 			}
+		}
+
+		if (!config) {
+			return c.json({ error: "Unknown function type - cannot test cron-triggered functions" }, 400);
 		}
 
 		const { inngest } = await import("../../lib/inngest");
 		await inngest.send({
-			name: eventName,
-			data: {
-				_test: true,
-				triggeredAt: new Date().toISOString(),
-				source: "admin-dashboard",
-			},
+			name: config.eventName,
+			data: config.payload,
 		});
 
 		return c.json({
 			success: true,
-			message: `Test event "${eventName}" sent. Check Inngest dashboard for run details.`,
+			message: `Test event "${config.eventName}" sent. Check Inngest dashboard for run details.`,
 		});
 	} catch (err: any) {
 		return c.json({ error: err.message }, 500);
@@ -247,7 +306,7 @@ inngestAdminRoutes.post("/runs/:runId/cancel", async (c) => {
 		const envId = await getInngestEnv();
 
 		if (isSelfHosted()) {
-			// Self-hosted: cannot cancel (webhooks are fire-and-forget from DB perspective)
+			// Self-hosted: cannot cancel (webhooks are synchronous from DB perspective)
 			return c.json(
 				{
 					success: false,
@@ -261,12 +320,7 @@ inngestAdminRoutes.post("/runs/:runId/cancel", async (c) => {
 			? `${baseUrl}/v1/environments/${envId}/runs/${runId}/cancel`
 			: `${baseUrl}/v1/runs/${runId}/cancel`;
 
-		const res = await fetch(url, { method: "POST", headers });
-
-		if (!res.ok) {
-			const error = await res.text();
-			return c.json({ error: `Failed to cancel run: ${error}` }, res.status);
-		}
+		const data = await fetchWithErrorCheck(url, { method: "POST", headers });
 
 		return c.json({ success: true, message: "Run cancelled successfully" });
 	} catch (err: any) {

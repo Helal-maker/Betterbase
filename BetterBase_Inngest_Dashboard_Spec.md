@@ -140,11 +140,12 @@ inngestAdminRoutes.post("/functions/:id/test", async (c) => {
     const functionId = c.req.param("id");
 
     // Map function ID to event name
+    // Note: poll-notification-rules is cron-triggered and cannot be manually triggered via test
     const functionEventMap: Record<string, string> = {
       "deliver-webhook": "betterbase/webhook.deliver",
       "evaluate-notification-rule": "betterbase/notification.evaluate",
       "export-project-users": "betterbase/export.users",
-      "poll-notification-rules": "betterbase/notification.evaluate",
+      // poll-notification-rules: null, // Cron-only - cannot test manually
     };
 
     const eventName = functionEventMap[functionId];

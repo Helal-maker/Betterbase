@@ -62,18 +62,41 @@ projectWebhookRoutes.post("/:webhookId/retry", async (c) => {
 
 	const webhook = webhooks[0];
 
-	// Get the latest failed delivery to use its payload for retry
+	// Get the latest FAILED delivery to use its payload for retry
 	const { rows: lastDelivery } = await pool.query(
-		`SELECT payload, attempt_count FROM betterbase_meta.webhook_deliveries
-     WHERE webhook_id = $1
+		`SELECT id, payload, attempt_count FROM betterbase_meta.webhook_deliveries
+     WHERE webhook_id = $1 AND status = 'failed'
      ORDER BY created_at DESC LIMIT 1`,
 		[webhook.id],
 	);
 
-	const payload = lastDelivery[0]?.payload ?? {};
-	const attempt = (lastDelivery[0]?.attempt_count ?? 0) + 1;
+	// If no failed delivery exists, return error
+	if (lastDelivery.length === 0) {
+		return c.json(
+			{
+				error: "No failed delivery found to retry. Ensure a delivery has previously failed.",
+			},
+			400,
+		);
+	}
 
-	// Send event to Inngest — Inngest handles the retry, backoff, and delivery logging
+	const failedDelivery = lastDelivery[0];
+	const payload = failedDelivery.payload ?? {};
+	const attempt = (failedDelivery.attempt_count ?? 0) + 1;
+
+	// Insert a pending delivery record FIRST so we can track it
+	// Then include the delivery ID in the event for the worker to update
+	const { rows: newDelivery } = await pool.query(
+		`INSERT INTO betterbase_meta.webhook_deliveries
+       (webhook_id, event_type, payload, status, attempt_count)
+     VALUES ($1, 'RETRY', $2, 'pending', $3)
+     RETURNING id`,
+		[webhook.id, JSON.stringify(payload), attempt],
+	);
+
+	const deliveryId = newDelivery[0].id;
+
+	// Send event to Inngest with delivery ID included
 	await inngest.send({
 		name: "betterbase/webhook.deliver",
 		data: {
@@ -85,16 +108,9 @@ projectWebhookRoutes.post("/:webhookId/retry", async (c) => {
 			tableName: webhook.table_name,
 			payload,
 			attempt,
+			deliveryId, // Include so worker can update the specific row
 		},
 	});
-
-	// Insert a pending delivery record immediately so the dashboard shows activity
-	await pool.query(
-		`INSERT INTO betterbase_meta.webhook_deliveries
-       (webhook_id, event_type, payload, status, attempt_count)
-     VALUES ($1, 'RETRY', $2, 'pending', $3)`,
-		[webhook.id, JSON.stringify(payload), attempt],
-	);
 
 	return c.json({
 		success: true,

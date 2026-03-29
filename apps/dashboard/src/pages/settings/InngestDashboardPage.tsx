@@ -157,11 +157,20 @@ export default function InngestDashboardPage() {
 								</CardDescription>
 							</div>
 							<div className="flex gap-2">
+								<label
+									htmlFor="run-status-filter"
+									className="text-sm"
+									style={{ color: "var(--color-text-secondary)" }}
+								>
+									Run status:
+								</label>
 								<select
+									id="run-status-filter"
 									className="border rounded px-2 py-1 text-sm"
 									style={{ background: "var(--color-surface)", color: "var(--color-text-primary)" }}
 									value={runStatusFilter}
 									onChange={(e) => setRunStatusFilter(e.target.value)}
+									aria-label="Filter runs by status"
 								>
 									<option value="">All Status</option>
 									<option value="pending">Pending</option>

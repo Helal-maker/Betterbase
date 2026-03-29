@@ -1,11 +1,12 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
 
 // Mock the inngest module
-const mockInngestSend = mock(() => Promise.resolve({ ids: [] }));
 const mockInngestCreateFunction = mock(() => ({
 	id: "mock-function",
 	run: mock(() => Promise.resolve({})),
 }));
+
+const mockInngestSend = mock(() => Promise.resolve({ ids: [] }));
 
 mock.module("../src/lib/inngest", () => ({
 	inngest: {
@@ -25,8 +26,9 @@ mock.module("../src/lib/inngest", () => ({
 }));
 
 // Mock the db module
+const mockPoolQuery = mock(() => Promise.resolve({ rows: [] }));
 const mockPool = {
-	query: mock(() => Promise.resolve({ rows: [] })),
+	query: mockPoolQuery,
 };
 
 mock.module("../src/lib/db", () => ({
@@ -37,13 +39,56 @@ describe("Inngest client", () => {
 	beforeEach(() => {
 		mockInngestSend.mockClear();
 		mockInngestCreateFunction.mockClear();
-		mockPool.query.mockClear();
+		mockPoolQuery.mockClear();
 	});
 
-	describe("Event schema", () => {
-		it("should define webhook deliver event structure", () => {
+	describe("Module exports", () => {
+		it("should export deliverWebhook function", async () => {
+			const { deliverWebhook } = await import("../src/lib/inngest");
+			expect(deliverWebhook).toBeDefined();
+			expect(deliverWebhook.id).toBe("deliver-webhook");
+		});
+
+		it("should export evaluateNotificationRule function", async () => {
+			const { evaluateNotificationRule } = await import("../src/lib/inngest");
+			expect(evaluateNotificationRule).toBeDefined();
+			expect(evaluateNotificationRule.id).toBe("evaluate-notification-rule");
+		});
+
+		it("should export exportProjectUsers function", async () => {
+			const { exportProjectUsers } = await import("../src/lib/inngest");
+			expect(exportProjectUsers).toBeDefined();
+			expect(exportProjectUsers.id).toBe("export-project-users");
+		});
+
+		it("should export pollNotificationRules function", async () => {
+			const { pollNotificationRules } = await import("../src/lib/inngest");
+			expect(pollNotificationRules).toBeDefined();
+			expect(pollNotificationRules.id).toBe("poll-notification-rules");
+		});
+
+		it("should export allInngestFunctions array with 4 functions", async () => {
+			const { allInngestFunctions } = await import("../src/lib/inngest");
+			expect(allInngestFunctions).toBeDefined();
+			expect(allInngestFunctions.length).toBe(4);
+		});
+
+		it("should have correct function IDs in allInngestFunctions", async () => {
+			const { allInngestFunctions } = await import("../src/lib/inngest");
+			const ids = allInngestFunctions.map((fn) => fn.id);
+			expect(ids).toContain("deliver-webhook");
+			expect(ids).toContain("evaluate-notification-rule");
+			expect(ids).toContain("export-project-users");
+			expect(ids).toContain("poll-notification-rules");
+		});
+	});
+
+	describe("inngest.send event triggering", () => {
+		it("should send webhook deliver event via inngest.send", async () => {
+			const { inngest } = await import("../src/lib/inngest");
+
 			const event = {
-				name: "betterbase/webhook.deliver",
+				name: "betterbase/webhook.deliver" as const,
 				data: {
 					webhookId: "wh_123",
 					webhookName: "Test Webhook",
@@ -56,33 +101,44 @@ describe("Inngest client", () => {
 				},
 			};
 
-			expect(event.name).toBe("betterbase/webhook.deliver");
-			expect(event.data.webhookId).toBe("wh_123");
-			expect(event.data.eventType).toBe("INSERT");
+			await inngest.send([event]);
+
+			expect(mockInngestSend).toHaveBeenCalled();
+			const sentEvents = mockInngestSend.mock.calls[0][0];
+			expect(sentEvents[0].name).toBe("betterbase/webhook.deliver");
+			expect(sentEvents[0].data.webhookId).toBe("wh_123");
+			expect(sentEvents[0].data.eventType).toBe("INSERT");
 		});
 
-		it("should define notification evaluate event structure", () => {
+		it("should send notification evaluate event via inngest.send", async () => {
+			const { inngest } = await import("../src/lib/inngest");
+
 			const event = {
-				name: "betterbase/notification.evaluate",
+				name: "betterbase/notification.evaluate" as const,
 				data: {
 					ruleId: "rule_123",
 					ruleName: "High Error Rate",
 					metric: "error_rate",
 					threshold: 5,
-					channel: "email",
+					channel: "email" as const,
 					target: "admin@example.com",
 					currentValue: 10,
 				},
 			};
 
-			expect(event.name).toBe("betterbase/notification.evaluate");
-			expect(event.data.metric).toBe("error_rate");
-			expect(event.data.channel).toBe("email");
+			await inngest.send([event]);
+
+			const sentEvents = mockInngestSend.mock.calls[0][0];
+			expect(sentEvents[0].name).toBe("betterbase/notification.evaluate");
+			expect(sentEvents[0].data.ruleId).toBe("rule_123");
+			expect(sentEvents[0].data.metric).toBe("error_rate");
 		});
 
-		it("should define export users event structure", () => {
+		it("should send export users event via inngest.send", async () => {
+			const { inngest } = await import("../src/lib/inngest");
+
 			const event = {
-				name: "betterbase/export.users",
+				name: "betterbase/export.users" as const,
 				data: {
 					projectId: "proj_123",
 					projectSlug: "my-project",
@@ -96,171 +152,75 @@ describe("Inngest client", () => {
 				},
 			};
 
-			expect(event.name).toBe("betterbase/export.users");
-			expect(event.data.projectSlug).toBe("my-project");
-			expect(event.data.filters?.search).toBe("john");
+			await inngest.send([event]);
+
+			const sentEvents = mockInngestSend.mock.calls[0][0];
+			expect(sentEvents[0].name).toBe("betterbase/export.users");
+			expect(sentEvents[0].data.projectSlug).toBe("my-project");
 		});
 	});
 
-	describe("Function definitions", () => {
-		it("should have 4 Inngest functions registered", () => {
-			const functions = [
-				{ id: "deliver-webhook" },
-				{ id: "evaluate-notification-rule" },
-				{ id: "export-project-users" },
-				{ id: "poll-notification-rules" },
-			];
+	describe("Database pool interactions", () => {
+		it("should get pool from db module", async () => {
+			const { getPool } = await import("../src/lib/db");
+			const pool = getPool();
 
-			expect(functions.length).toBe(4);
-			expect(functions.map((f) => f.id)).toContain("deliver-webhook");
-			expect(functions.map((f) => f.id)).toContain("poll-notification-rules");
-		});
-	});
-
-	describe("Webhook dispatcher", () => {
-		it("should construct correct webhook event data", () => {
-			const webhookData = {
-				webhookId: "wh_test",
-				webhookName: "Test Webhook",
-				url: "https://example.com/hook",
-				secret: "mysecret",
-				eventType: "INSERT",
-				tableName: "orders",
-				payload: { id: "order_1", total: 100 },
-				attempt: 1,
-			};
-
-			expect(webhookData.eventType).toBe("INSERT");
-			expect(webhookData.tableName).toBe("orders");
-			expect(webhookData.attempt).toBe(1);
+			expect(pool).toBeDefined();
+			expect(pool.query).toBeDefined();
 		});
 
-		it("should handle null secret gracefully", () => {
-			const webhookData = {
-				webhookId: "wh_test",
-				url: "https://example.com/hook",
-				secret: null,
-				eventType: "UPDATE",
-				tableName: "products",
-				payload: { id: "prod_1" },
-				attempt: 1,
-			};
+		it("should call pool.query for export job insert", async () => {
+			const { getPool } = await import("../src/lib/db");
+			const pool = getPool();
 
-			expect(webhookData.secret).toBeNull();
-		});
-	});
+			await pool.query(
+				`INSERT INTO betterbase_meta.export_jobs
+           (project_id, requested_by, status, row_count, result_object_key, result_expires_at, completed_at)
+         VALUES ($1, $2, 'complete', $3, $4, $5, NOW())`,
+				["proj_123", "admin@example.com", 10, "exports/proj_123/123.csv", new Date()],
+			);
 
-	describe("Notification rule evaluation", () => {
-		it("should trigger notification when threshold is breached", () => {
-			const rule = {
-				ruleId: "rule_1",
-				metric: "error_rate",
-				threshold: 5,
-				currentValue: 10,
-			};
-
-			const shouldTrigger = rule.currentValue >= rule.threshold;
-			expect(shouldTrigger).toBe(true);
+			expect(mockPoolQuery).toHaveBeenCalled();
 		});
 
-		it("should not trigger notification when threshold is not breached", () => {
-			const rule = {
-				ruleId: "rule_1",
-				metric: "error_rate",
-				threshold: 5,
-				currentValue: 2,
-			};
+		it("should call pool.query for webhook secret lookup", async () => {
+			const { getPool } = await import("../src/lib/db");
+			const pool = getPool();
 
-			const shouldTrigger = rule.currentValue >= rule.threshold;
-			expect(shouldTrigger).toBe(false);
+			await pool.query("SELECT secret FROM betterbase_meta.webhooks WHERE id = $1", ["wh_123"]);
+
+			expect(mockPoolQuery).toHaveBeenCalled();
+			expect(mockPoolQuery.mock.calls[0][0]).toContain("webhooks");
+			expect(mockPoolQuery.mock.calls[0][0]).toContain("SELECT");
 		});
 
-		it("should support email and webhook channels", () => {
-			const channels = ["email", "webhook"];
-			expect(channels).toContain("email");
-			expect(channels).toContain("webhook");
-		});
-	});
+		it("should call pool.query for notification rules", async () => {
+			const { getPool } = await import("../src/lib/db");
+			const pool = getPool();
 
-	describe("Cron schedule", () => {
-		it("should use 5-minute interval for notification polling", () => {
-			const cronExpression = "*/5 * * * *";
-			const parts = cronExpression.split(" ");
+			await pool.query("SELECT * FROM betterbase_meta.notification_rules WHERE enabled = TRUE");
 
-			expect(parts[0]).toBe("*/5"); // Every 5 minutes
-			expect(parts.length).toBe(5);
-		});
-	});
-
-	describe("CSV export", () => {
-		it("should build CSV header correctly", () => {
-			const header = "id,name,email,email_verified,created_at,banned";
-			const columns = header.split(",");
-
-			expect(columns).toContain("id");
-			expect(columns).toContain("email");
-			expect(columns).toContain("banned");
+			expect(mockPoolQuery).toHaveBeenCalled();
+			expect(mockPoolQuery.mock.calls[0][0]).toContain("notification_rules");
 		});
 
-		it("should format row data with proper escaping", () => {
-			const row = {
-				id: "user_1",
-				name: "John Doe",
-				email: "john@example.com",
-				email_verified: true,
-				created_at: "2024-01-15",
-				banned: false,
-			};
+		it("should call pool.query for request logs metric", async () => {
+			const { getPool } = await import("../src/lib/db");
+			const pool = getPool();
 
-			const csvRow = `${row.id},"${row.name}","${row.email}",${row.email_verified},${row.created_at},${row.banned}`;
-			expect(csvRow).toContain('"John Doe"');
-			expect(csvRow).toContain("john@example.com");
-		});
+			await pool.query(`
+				SELECT
+					ROUND(
+						COUNT(*) FILTER (WHERE status >= 500)::numeric /
+						NULLIF(COUNT(*), 0) * 100,
+						2
+					) AS value
+				FROM betterbase_meta.request_logs
+				WHERE created_at > NOW() - INTERVAL '5 minutes'
+			`);
 
-		it("should apply search filter in SQL", () => {
-			const filters = { search: "test" };
-			const conditions = [];
-
-			if (filters.search) {
-				conditions.push(`(email ILIKE $1 OR name ILIKE $1)`);
-			}
-
-			expect(conditions.length).toBe(1);
-			expect(conditions[0]).toContain("ILIKE");
-		});
-	});
-
-	describe("Concurrency limits", () => {
-		it("should limit webhook deliveries to 10 per webhook ID", () => {
-			const concurrency = { limit: 10, key: "event.data.webhookId" };
-			expect(concurrency.limit).toBe(10);
-		});
-
-		it("should limit CSV exports to 1 per project", () => {
-			const concurrency = { limit: 1, key: "event.data.projectId" };
-			expect(concurrency.limit).toBe(1);
-		});
-	});
-
-	describe("Retry configuration", () => {
-		it("should configure 5 retries for webhook delivery", () => {
-			const retries = 5;
-			expect(retries).toBe(5);
-		});
-
-		it("should configure 3 retries for notification evaluation", () => {
-			const retries = 3;
-			expect(retries).toBe(3);
-		});
-
-		it("should configure 2 retries for CSV export", () => {
-			const retries = 2;
-			expect(retries).toBe(2);
-		});
-
-		it("should configure 1 retry for cron polling", () => {
-			const retries = 1;
-			expect(retries).toBe(1);
+			expect(mockPoolQuery).toHaveBeenCalled();
+			expect(mockPoolQuery.mock.calls[0][0]).toContain("request_logs");
 		});
 	});
 });

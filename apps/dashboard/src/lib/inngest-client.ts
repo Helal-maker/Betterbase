@@ -1,5 +1,15 @@
 const API_BASE = "/admin/inngest";
 
+// Helper to handle fetch responses with error checking
+async function fetchInngest<T>(url: string, options?: RequestInit): Promise<T> {
+	const res = await fetch(url, options);
+	const data = await res.json().catch(() => ({}));
+	if (!res.ok) {
+		throw new Error(data.error ?? `HTTP ${res.status}`);
+	}
+	return data as T;
+}
+
 export interface InngestStatus {
 	status: "connected" | "error";
 	mode: "self-hosted" | "cloud";
@@ -22,31 +32,34 @@ export interface InngestRun {
 	startedAt: string;
 	endedAt?: string;
 	output?: string;
+	error?: string;
 }
 
 export const inngestApi = {
-	getStatus: () => fetch(`${API_BASE}/status`).then((r) => r.json() as Promise<InngestStatus>),
+	getStatus: () => fetchInngest<InngestStatus>(`${API_BASE}/status`),
 
-	getFunctions: () =>
-		fetch(`${API_BASE}/functions`).then((r) => r.json()) as Promise<{
-			functions: InngestFunction[];
-		}>,
+	getFunctions: () => fetchInngest<{ functions: InngestFunction[] }>(`${API_BASE}/functions`),
 
 	getFunctionRuns: (functionId: string, status?: string) => {
 		const params = new URLSearchParams();
 		if (status) params.append("status", status);
-		return fetch(`${API_BASE}/functions/${functionId}/runs?${params}`).then((r) =>
-			r.json(),
-		) as Promise<{ runs: InngestRun[] }>;
+		return fetchInngest<{ runs: InngestRun[] }>(
+			`${API_BASE}/functions/${functionId}/runs?${params}`,
+		);
 	},
 
-	getRun: (runId: string) => fetch(`${API_BASE}/runs/${runId}`).then((r) => r.json()),
+	getRun: (runId: string) => fetchInngest<any>(`${API_BASE}/runs/${runId}`),
 
 	triggerTest: (functionId: string) =>
-		fetch(`${API_BASE}/functions/${functionId}/test`, { method: "POST" }).then((r) => r.json()),
+		fetchInngest<{ success: boolean; message: string }>(
+			`${API_BASE}/functions/${functionId}/test`,
+			{ method: "POST" },
+		),
 
 	cancelRun: (runId: string) =>
-		fetch(`${API_BASE}/runs/${runId}/cancel`, { method: "POST" }).then((r) => r.json()),
+		fetchInngest<{ success: boolean; message?: string }>(`${API_BASE}/runs/${runId}/cancel`, {
+			method: "POST",
+		}),
 
-	getJobs: () => fetch(`${API_BASE}/jobs`).then((r) => r.json()),
+	getJobs: () => fetchInngest<{ jobs: any[] }>(`${API_BASE}/jobs`),
 };

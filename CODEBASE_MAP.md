@@ -215,10 +215,10 @@ React admin dashboard for self-hosted management.
 │           │                       │                       │                   │
 │           ▼                       ▼                       ▼                   │
 │  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐           │
-│  │   Dashboard     │    │     Server      │    │  Inngest        │           │
-│  │  (React App)    │    │  (@betterbase   │    │  (Workflow      │           │
-│  │  Port: 3001     │    │   /server)      │    │   Engine)       │           │
-│  │                 │    │  Port: 3000     │    │  Port: 8288     │           │
+│  │   Dashboard    │    │     Server      │    │  Inngest        │           │
+│  │  (React App)   │    │  (@betterbase   │    │  (Workflow      │           │
+│  │  Behind nginx  │    │   /server)      │    │   Engine)       │           │
+│  │  (not direct)  │    │  Port: 3001     │    │  Port: 8288     │           │
 │  └─────────────────┘    └────────┬────────┘    └────────┬────────┘           │
 │                                   │                       │                    │
 │                                   └───────────┬───────────┘                    │
@@ -572,7 +572,7 @@ Betterbase uses [Inngest](https://www.inngest.com/) for durable workflows and ba
 | `deliverWebhook` | Event | Retryable webhook delivery with auto-backoff |
 | `evaluateNotificationRule` | Event | Email/webhook notifications on threshold breach |
 | `exportProjectUsers` | Event | Background CSV export |
-| `pollNotificationRules` | Cron (*/5 * * * *) | 5-minute metric polling |
+| `pollNotificationRules` | Cron `*/5 * * * *` | 5-minute metric polling |
 
 ### Environment Variables
 

@@ -1,4 +1,4 @@
-export { BetterbaseProvider, useBetterBaseContext, type BetterBaseConfig } from "./provider";
+export { BetterbaseProvider, useBetterBaseContext, type BetterBaseReactConfig } from "./provider";
 export {
 	useQuery,
 	useMutation,

@@ -72,7 +72,7 @@ app.on(
 	serve({
 		client: inngest,
 		functions: allInngestFunctions,
-		signingKey: process.env.INNGEST_SIGNING_KEY,
+		signingKey: env.INNGEST_SIGNING_KEY,
 	}),
 );
 

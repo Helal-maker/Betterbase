@@ -102,8 +102,8 @@ services:
       NODE_ENV: production
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
       INNGEST_BASE_URL: http://inngest:8288
-      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY:-betterbase-dev-signing-key}
-      INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY:-betterbase-dev-event-key}
+      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY}
+      INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY}
     networks:
       - betterbase-internal
     healthcheck:
