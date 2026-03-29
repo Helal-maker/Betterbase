@@ -6,7 +6,7 @@ const mockInngestCreateFunction = mock(() => ({
 	run: mock(() => Promise.resolve({})),
 }));
 
-const mockInngestSend = mock(() => Promise.resolve({ ids: [] }));
+const mockInngestSend = mock(() => Promise.resolve({ ids: [] as string[] }));
 
 mock.module("../src/lib/inngest", () => ({
 	inngest: {
@@ -22,11 +22,11 @@ mock.module("../src/lib/inngest", () => ({
 		{ id: "evaluate-notification-rule" },
 		{ id: "export-project-users" },
 		{ id: "poll-notification-rules" },
-	],
+	] as { id: string }[],
 }));
 
 // Mock the db module
-const mockPoolQuery = mock(() => Promise.resolve({ rows: [] }));
+const mockPoolQuery = mock(() => Promise.resolve({ rows: [] as any[] }));
 const mockPool = {
 	query: mockPoolQuery,
 };
@@ -46,25 +46,29 @@ describe("Inngest client", () => {
 		it("should export deliverWebhook function", async () => {
 			const { deliverWebhook } = await import("../src/lib/inngest");
 			expect(deliverWebhook).toBeDefined();
-			expect(deliverWebhook.id).toBe("deliver-webhook");
+			expect((deliverWebhook as unknown as { id: string }).id).toBe("deliver-webhook");
 		});
 
 		it("should export evaluateNotificationRule function", async () => {
 			const { evaluateNotificationRule } = await import("../src/lib/inngest");
 			expect(evaluateNotificationRule).toBeDefined();
-			expect(evaluateNotificationRule.id).toBe("evaluate-notification-rule");
+			expect((evaluateNotificationRule as unknown as { id: string }).id).toBe(
+				"evaluate-notification-rule",
+			);
 		});
 
 		it("should export exportProjectUsers function", async () => {
 			const { exportProjectUsers } = await import("../src/lib/inngest");
 			expect(exportProjectUsers).toBeDefined();
-			expect(exportProjectUsers.id).toBe("export-project-users");
+			expect((exportProjectUsers as unknown as { id: string }).id).toBe("export-project-users");
 		});
 
 		it("should export pollNotificationRules function", async () => {
 			const { pollNotificationRules } = await import("../src/lib/inngest");
 			expect(pollNotificationRules).toBeDefined();
-			expect(pollNotificationRules.id).toBe("poll-notification-rules");
+			expect((pollNotificationRules as unknown as { id: string }).id).toBe(
+				"poll-notification-rules",
+			);
 		});
 
 		it("should export allInngestFunctions array with 4 functions", async () => {
@@ -75,7 +79,9 @@ describe("Inngest client", () => {
 
 		it("should have correct function IDs in allInngestFunctions", async () => {
 			const { allInngestFunctions } = await import("../src/lib/inngest");
-			const ids = allInngestFunctions.map((fn) => fn.id);
+			expect(allInngestFunctions).toBeDefined();
+			expect(allInngestFunctions.length).toBe(4);
+			const ids = allInngestFunctions.map((fn: unknown) => (fn as { id: string }).id);
 			expect(ids).toContain("deliver-webhook");
 			expect(ids).toContain("evaluate-notification-rule");
 			expect(ids).toContain("export-project-users");
@@ -104,10 +110,12 @@ describe("Inngest client", () => {
 			await inngest.send([event]);
 
 			expect(mockInngestSend).toHaveBeenCalled();
-			const sentEvents = mockInngestSend.mock.calls[0][0];
-			expect(sentEvents[0].name).toBe("betterbase/webhook.deliver");
-			expect(sentEvents[0].data.webhookId).toBe("wh_123");
-			expect(sentEvents[0].data.eventType).toBe("INSERT");
+			const allCalls = mockInngestSend.mock.calls as unknown[][];
+			const firstArg = allCalls[0]?.[0];
+			const sentEvents = firstArg as { name: string; data: Record<string, unknown> }[] | undefined;
+			expect(sentEvents?.[0]?.name).toBe("betterbase/webhook.deliver");
+			expect(sentEvents?.[0]?.data.webhookId).toBe("wh_123");
+			expect(sentEvents?.[0]?.data.eventType).toBe("INSERT");
 		});
 
 		it("should send notification evaluate event via inngest.send", async () => {
@@ -128,10 +136,12 @@ describe("Inngest client", () => {
 
 			await inngest.send([event]);
 
-			const sentEvents = mockInngestSend.mock.calls[0][0];
-			expect(sentEvents[0].name).toBe("betterbase/notification.evaluate");
-			expect(sentEvents[0].data.ruleId).toBe("rule_123");
-			expect(sentEvents[0].data.metric).toBe("error_rate");
+			const allCalls = mockInngestSend.mock.calls as unknown[][];
+			const firstArg = allCalls[0]?.[0];
+			const sentEvents = firstArg as { name: string; data: Record<string, unknown> }[] | undefined;
+			expect(sentEvents?.[0]?.name).toBe("betterbase/notification.evaluate");
+			expect(sentEvents?.[0]?.data.ruleId).toBe("rule_123");
+			expect(sentEvents?.[0]?.data.metric).toBe("error_rate");
 		});
 
 		it("should send export users event via inngest.send", async () => {
@@ -154,9 +164,11 @@ describe("Inngest client", () => {
 
 			await inngest.send([event]);
 
-			const sentEvents = mockInngestSend.mock.calls[0][0];
-			expect(sentEvents[0].name).toBe("betterbase/export.users");
-			expect(sentEvents[0].data.projectSlug).toBe("my-project");
+			const allCalls = mockInngestSend.mock.calls as unknown[][];
+			const firstArg = allCalls[0]?.[0];
+			const sentEvents = firstArg as { name: string; data: Record<string, unknown> }[] | undefined;
+			expect(sentEvents?.[0]?.name).toBe("betterbase/export.users");
+			expect(sentEvents?.[0]?.data.projectSlug).toBe("my-project");
 		});
 	});
 
@@ -190,8 +202,10 @@ describe("Inngest client", () => {
 			await pool.query("SELECT secret FROM betterbase_meta.webhooks WHERE id = $1", ["wh_123"]);
 
 			expect(mockPoolQuery).toHaveBeenCalled();
-			expect(mockPoolQuery.mock.calls[0][0]).toContain("webhooks");
-			expect(mockPoolQuery.mock.calls[0][0]).toContain("SELECT");
+			const calls = mockPoolQuery.mock.calls;
+			expect(calls.length).toBeGreaterThan(0);
+			expect((calls[0] as unknown[])[0]).toContain("webhooks");
+			expect((calls[0] as unknown[])[0]).toContain("SELECT");
 		});
 
 		it("should call pool.query for notification rules", async () => {
@@ -201,7 +215,9 @@ describe("Inngest client", () => {
 			await pool.query("SELECT * FROM betterbase_meta.notification_rules WHERE enabled = TRUE");
 
 			expect(mockPoolQuery).toHaveBeenCalled();
-			expect(mockPoolQuery.mock.calls[0][0]).toContain("notification_rules");
+			const calls = mockPoolQuery.mock.calls;
+			expect(calls.length).toBeGreaterThan(0);
+			expect((calls[0] as unknown[])[0]).toContain("notification_rules");
 		});
 
 		it("should call pool.query for request logs metric", async () => {
@@ -220,7 +236,9 @@ describe("Inngest client", () => {
 			`);
 
 			expect(mockPoolQuery).toHaveBeenCalled();
-			expect(mockPoolQuery.mock.calls[0][0]).toContain("request_logs");
+			const calls = mockPoolQuery.mock.calls;
+			expect(calls.length).toBeGreaterThan(0);
+			expect((calls[0] as unknown[])[0]).toContain("request_logs");
 		});
 	});
 });

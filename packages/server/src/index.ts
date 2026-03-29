@@ -90,7 +90,7 @@ app.onError((err, c) => {
 	return c.json({ error: "Internal server error" }, 500);
 });
 
-const port = Number.parseInt(env.PORT);
+const port = Number.parseInt((env as { PORT?: string }).PORT ?? "3000");
 console.log(`[server] Betterbase server running on port ${port}`);
 
 export default {

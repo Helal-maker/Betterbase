@@ -34,7 +34,7 @@ describe("routes logic tests", () => {
 		});
 
 		it("should handle missing password gracefully", () => {
-			const row = {
+			const row: { id: string; host: string; password?: string } = {
 				id: "singleton",
 				host: "smtp.example.com",
 			};

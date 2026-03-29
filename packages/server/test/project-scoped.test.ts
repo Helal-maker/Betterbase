@@ -3,7 +3,7 @@ import { getPool } from "../src/lib/db";
 
 // Mock the db module
 const mockPool = {
-	query: mock(() => Promise.resolve({ rows: [] })),
+	query: mock(() => Promise.resolve({ rows: [] as any[] })),
 };
 
 mock.module("../src/lib/db", () => ({
@@ -33,7 +33,7 @@ describe("project-scoped routes", () => {
 	describe("project middleware", () => {
 		it("should verify project exists before routing", async () => {
 			mockPool.query.mockResolvedValueOnce({
-				rows: [{ id: "proj-123", name: "Test Project", slug: "test-project" }],
+				rows: [{ id: "proj-123", name: "Test Project", slug: "test-project" }] as any[],
 			});
 
 			const pool = getPool();
@@ -47,7 +47,7 @@ describe("project-scoped routes", () => {
 		});
 
 		it("should return 404 when project not found", async () => {
-			mockPool.query.mockResolvedValueOnce({ rows: [] });
+			mockPool.query.mockResolvedValueOnce({ rows: [] as any[] });
 
 			const pool = getPool();
 			const { rows } = await pool.query(
@@ -71,9 +71,9 @@ describe("project-scoped routes", () => {
 						created_at: new Date(),
 						banned: false,
 					},
-				],
+				] as any[],
 			});
-			mockPool.query.mockResolvedValueOnce({ rows: [{ total: 1 }] });
+			mockPool.query.mockResolvedValueOnce({ rows: [{ total: 1 }] as any[] });
 
 			const pool = getPool();
 			const s = "project_test";

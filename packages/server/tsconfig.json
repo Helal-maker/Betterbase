@@ -4,7 +4,8 @@
 		"outDir": "dist",
 		"rootDir": ".",
 		"types": ["bun-types"],
-		"moduleResolution": "Bundler"
+		"moduleResolution": "Bundler",
+		"skipLibCheck": true
 	},
 	"include": ["src/**/*", "migrations/**/*", "src/types.d.ts", "test/**/*"]
 }

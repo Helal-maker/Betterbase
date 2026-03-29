@@ -93,13 +93,16 @@ inngestAdminRoutes.get("/functions", async (c) => {
 			// Return local functions from inngest.ts
 			const { allInngestFunctions } = await import("../../lib/inngest");
 
-			const functions = allInngestFunctions.map((fn) => ({
-				id: fn.id,
-				name: fn.id,
-				status: "active",
-				createdAt: new Date().toISOString(),
-				triggers: [{ type: "event", event: `betterbase/${fn.id.split("-").pop()}` }],
-			}));
+			const functions = allInngestFunctions.map((fn) => {
+				const fnAny = fn as unknown as { id: string };
+				return {
+					id: fnAny.id,
+					name: fnAny.id,
+					status: "active",
+					createdAt: new Date().toISOString(),
+					triggers: [{ type: "event", event: `betterbase/${fnAny.id.split("-").pop()}` }],
+				};
+			});
 
 			return c.json({ functions });
 		}
@@ -284,7 +287,10 @@ inngestAdminRoutes.post("/functions/:id/test", async (c) => {
 
 		const { inngest } = await import("../../lib/inngest");
 		await inngest.send({
-			name: config.eventName,
+			name: config.eventName as
+				| "betterbase/webhook.deliver"
+				| "betterbase/notification.evaluate"
+				| "betterbase/export.users",
 			data: config.payload,
 		});
 

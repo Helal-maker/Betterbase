@@ -5,11 +5,7 @@
 
 language: "en-US"
 
-tone_instructions: |
-  You are reviewing BetterBase — an AI-native, open-source BaaS platform built by a solo
-  developer using AI coding agents (Kilo Code, Claude). Be direct, dense, and technical.
-  Skip encouragement. Flag real issues only. Prioritize security, correctness, and
-  architectural consistency over style. When something is fine, say nothing.
+tone_instructions: "Be direct, dense, and technical. Skip encouragement. Flag real issues only. Prioritize security, correctness, and architectural consistency over style. When something is fine, say nothing."
 
 early_access: true
 

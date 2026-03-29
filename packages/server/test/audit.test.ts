@@ -3,7 +3,7 @@ import { type AuditAction, type AuditEntry, getClientIp, writeAuditLog } from ".
 
 // Mock the db module
 const mockPool = {
-	query: mock(() => Promise.resolve({ rows: [] })),
+	query: mock(() => Promise.resolve({ rows: [] as any[] })),
 };
 
 mock.module("../src/lib/db", () => ({
@@ -56,7 +56,8 @@ describe("audit utility", () => {
 			await writeAuditLog(entry);
 
 			expect(mockPool.query).toHaveBeenCalled();
-			const [query] = mockPool.query.mock.calls[0];
+			const calls = mockPool.query.mock.calls as unknown[][];
+			const [query] = calls[0] ?? ["", []];
 			expect(query).toContain("INSERT INTO betterbase_meta.audit_log");
 		});
 
@@ -80,9 +81,11 @@ describe("audit utility", () => {
 			await writeAuditLog(entry);
 
 			expect(mockPool.query).toHaveBeenCalled();
-			const [, params] = mockPool.query.mock.calls[0];
-			expect(params[6]).toBe(JSON.stringify({ name: "Old Name" }));
-			expect(params[7]).toBe(JSON.stringify({ name: "New Name" }));
+			const calls = mockPool.query.mock.calls as unknown[][];
+			const [, params] = calls[0] ?? ["", []];
+			const paramArr = params as unknown[];
+			expect(paramArr[6]).toBe(JSON.stringify({ name: "Old Name" }));
+			expect(paramArr[7]).toBe(JSON.stringify({ name: "New Name" }));
 		});
 
 		it("should handle undefined optional fields", async () => {

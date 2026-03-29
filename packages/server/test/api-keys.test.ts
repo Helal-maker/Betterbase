@@ -4,7 +4,7 @@ import { getPool } from "../src/lib/db";
 
 // Mock the db module
 const mockPool = {
-	query: mock(() => Promise.resolve({ rows: [] })),
+	query: mock(() => Promise.resolve({ rows: [] as any[] })),
 };
 
 mock.module("../src/lib/db", () => ({
