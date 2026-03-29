@@ -45,7 +45,9 @@ export function useLogStream(opts: UseLogStreamOptions): UseLogStreamResult {
 				? `/admin/logs/stream?project_id=${projectId}&limit=100`
 				: `/admin/logs/stream?limit=100`;
 
-			const params = nextSinceRef.value ? `&since=${encodeURIComponent(nextSinceRef.value)}` : "";
+			const params = nextSinceRef.current
+				? `&since=${encodeURIComponent(nextSinceRef.current)}`
+				: "";
 			const fullUrl = params ? `${url}${params}` : url;
 
 			const response = await api.get<{ logs: LogEntry[]; next_since: string }>(fullUrl);

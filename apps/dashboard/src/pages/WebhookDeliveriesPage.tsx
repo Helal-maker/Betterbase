@@ -49,7 +49,7 @@ export default function WebhookDeliveriesPage() {
 	if (isLoading) return <PageSkeleton />;
 
 	const s = stats?.stats;
-	const d = deliveries?.delivers ?? deliveries?.deliveries ?? [];
+	const d = deliveries?.deliveries ?? [];
 
 	return (
 		<div>
