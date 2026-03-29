@@ -1,3 +1,5 @@
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
+
 // Mock the better-auth/client module - must be before AuthClient import
 const mockSignUp = mock(async (params: { email: string; password: string; name: string }) => {
 	return {
@@ -79,7 +81,6 @@ mock.module("better-auth/client", () => ({
 	})),
 }));
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, mock } from "bun:test";
 import { AuthClient } from "../src/auth";
 import { AuthError, NetworkError } from "../src/errors";
 
