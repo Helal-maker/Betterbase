@@ -1,25 +1,8 @@
-// packages/cli/test/generate-crud.test.ts
-// Tests for runGenerateCrudCommand(projectRoot, tableName)
-// IMPORTANT: The command internally calls:
-//   - ensureZodValidatorInstalled() → spawns "bun add @hono/zod-validator"
-//   - ensureRealtimeUtility()       → reads realtime template from disk
-//   - runGenerateGraphqlCommand()   → regenerates GraphQL schema
-// We mock these by ensuring @hono/zod-validator is detectable in node_modules
-// (it's already a dev dep in the monorepo) and by pre-creating the realtime
-// utility so ensureRealtimeUtility() finds it and skips the copy.
-
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
-import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-
-// Mock graphql command to avoid it running during generate tests
-mock.module("./graphql", () => ({
-	runGenerateGraphqlCommand: async () => {},
-}));
-
-const { runGenerateCrudCommand } = await import("../src/commands/generate");
 
 const MULTI_TABLE_SCHEMA = `
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
@@ -46,16 +29,14 @@ async function scaffoldProject(dir: string): Promise<void> {
 
 	await writeFile(join(dir, "src/db/schema.ts"), MULTI_TABLE_SCHEMA);
 
-	// Pre-create realtime utility so ensureRealtimeUtility() skips the copy
 	await writeFile(
 		join(dir, "src/lib/realtime.ts"),
 		"export const realtime = { broadcast: () => {} }",
 	);
 
-	// Pre-create routes index so updateMainRouter() can patch it
 	await writeFile(
 		join(dir, "src/routes/index.ts"),
-		`import { Hono } from 'hono'
+		`import type { Hono } from 'hono'
 import { healthRoute } from './health';
 export function registerRoutes(app: Hono) {
   app.route('/api/health', healthRoute);
@@ -63,7 +44,6 @@ export function registerRoutes(app: Hono) {
 `,
 	);
 
-	// Simulate @hono/zod-validator being available so the install check passes
 	await mkdir(join(dir, "node_modules/@hono/zod-validator"), { recursive: true });
 	await writeFile(
 		join(dir, "node_modules/@hono/zod-validator/package.json"),
@@ -76,9 +56,7 @@ export function registerRoutes(app: Hono) {
 	);
 }
 
-// Skipped: generate CRUD tests have framework issues with mock.module() in Bun 1.3.x
-// This is a known limitation where global mock state can corrupt subsequent test runs.
-describe.skip("runGenerateCrudCommand", () => {
+describe("runGenerateCrudCommand", () => {
 	let tmpDir: string;
 
 	beforeEach(async () => {
@@ -91,79 +69,92 @@ describe.skip("runGenerateCrudCommand", () => {
 	});
 
 	test("creates src/routes/posts.ts for posts table", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
 		expect(existsSync(join(tmpDir, "src/routes/posts.ts"))).toBe(true);
 	});
 
 	test("generated route exports postsRoute", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("postsRoute");
 	});
 
 	test("generated route contains GET / handler", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".get('/'");
 	});
 
 	test("generated route contains GET /:id handler", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".get('/:id'");
 	});
 
 	test("generated route contains POST handler", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".post('/'");
 	});
 
 	test("generated route contains PATCH handler", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".patch('/:id'");
 	});
 
 	test("generated route contains DELETE handler", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".delete('/:id'");
 	});
 
 	test("generated route imports Zod and uses zValidator", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("zValidator");
 		expect(content).toContain("z.object");
 	});
 
 	test("generated route includes pagination schema", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("paginationSchema");
 	});
 
 	test("generated route broadcasts realtime events", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFile(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("realtime.broadcast");
 	});
 
 	test("updates src/routes/index.ts to register the new route", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const router = await readFile(join(tmpDir, "src/routes/index.ts"), "utf-8");
+		const router = await readFileSync(join(tmpDir, "src/routes/index.ts"), "utf-8");
 		expect(router).toContain("postsRoute");
 		expect(router).toContain("/api/posts");
 	});
 
 	test("throws for a table that does not exist in the schema", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await expect(runGenerateCrudCommand(tmpDir, "nonexistent_table_xyz")).rejects.toThrow(
 			'Table "nonexistent_table_xyz" not found in schema.',
 		);
 	});
 
 	test("throws when schema file does not exist", async () => {
+		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await rm(join(tmpDir, "src/db/schema.ts"));
 		await expect(runGenerateCrudCommand(tmpDir, "posts")).rejects.toThrow("Schema file not found");
 	});
