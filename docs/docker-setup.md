@@ -55,7 +55,7 @@ docker compose -f docker-compose.self-hosted.yml up -d
 
 ```bash
 # Generate a secure auth secret
-AUTH_SECRET=$(openssl rand -base64 32)
+BETTERBASE_JWT_SECRET=$(openssl rand -base64 32)
 
 # Generate Inngest keys (optional for development)
 INNGEST_SIGNING_KEY=$(openssl rand -hex 32)
@@ -158,7 +158,7 @@ docker compose up -d --build betterbase-server
 | Database | Docker PostgreSQL | Docker or managed |
 | Storage | Docker MinIO | Docker, R2, S3, or B2 |
 | SSL/TLS | Not needed | Required (use Traefik/Caddy) |
-| Inngest | Dev mode | Production mode |
+| Inngest | Dev mode (`inngest dev`) | Production mode (`inngest start`) |
 
 ## Alternative: External Services
 

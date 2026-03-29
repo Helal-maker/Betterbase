@@ -45,7 +45,7 @@ CMD ["bun", "run", "start"]
 docker build -t my-app .
 docker run -p 3000:3000 \
   -e DATABASE_URL=$DATABASE_URL \
-  -e AUTH_SECRET=$AUTH_SECRET \
+  -e BETTERBASE_JWT_SECRET=$BETTERBASE_JWT_SECRET \
   my-app
 ```
 
@@ -93,7 +93,7 @@ services:
     envVars:
       - key: DATABASE_URL
         fromDatabase: my-db
-      - key: AUTH_SECRET
+      - key: BETTERBASE_JWT_SECRET
         generateValue: true
 databases:
   - name: my-db
@@ -218,10 +218,10 @@ Key variables:
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET` | Auth secret (min 32 chars) |
-| `SERVER_URL` | Public URL of your instance |
-| `ADMIN_EMAIL` | Initial admin email |
-| `ADMIN_PASSWORD` | Initial admin password |
+| `BETTERBASE_JWT_SECRET` | Auth secret (min 32 chars) |
+| `BETTERBASE_PUBLIC_URL` | Public URL of your instance |
+| `BETTERBASE_ADMIN_EMAIL` | Initial admin email |
+| `BETTERBASE_ADMIN_PASSWORD` | Initial admin password |
 
 ### CLI Login
 
@@ -242,8 +242,8 @@ See [SELF_HOSTED.md](../../SELF_HOSTED.md) for complete documentation.
 DATABASE_URL=postgresql://user:password@host:5432/db
 
 # Authentication
-AUTH_SECRET=your-secret-key-min-32-chars-long
-AUTH_URL=https://your-domain.com
+BETTERBASE_JWT_SECRET=your-secret-key-min-32-chars-long
+BETTERBASE_PUBLIC_URL=https://your-domain.com
 
 # Storage (if using S3)
 STORAGE_PROVIDER=s3
@@ -253,13 +253,13 @@ AWS_ACCESS_KEY_KEY=your-key
 AWS_SECRET_ACCESS_KEY=your-secret
 
 # CORS
-CORS_ORIGIN=https://your-frontend.com
+CORS_ORIGINS=https://your-frontend.com
 ```
 
 ### Security Checklist
 
 - [ ] Use HTTPS in production
-- [ ] Set strong `AUTH_SECRET`
+- [ ] Set strong `BETTERBASE_JWT_SECRET`
 - [ ] Configure CORS origins
 - [ ] Enable RLS
 - [ ] Set up monitoring

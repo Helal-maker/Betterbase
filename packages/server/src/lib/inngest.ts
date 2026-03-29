@@ -25,6 +25,24 @@ const validateSchemaName = (slug: string): string => {
 	return `project_${slug}`;
 };
 
+const getNextDeliveryAttempt = async (
+	webhookId: string,
+	eventType: string,
+	payload: unknown,
+): Promise<number> => {
+	const { getPool } = await import("./db");
+	const pool = getPool();
+	const { rows } = await pool.query(
+		`SELECT COALESCE(MAX(attempt_count), 0) + 1 AS next_attempt
+		 FROM betterbase_meta.webhook_deliveries
+		 WHERE webhook_id = $1
+		   AND event_type = $2
+		   AND payload = $3::jsonb`,
+		[webhookId, eventType, JSON.stringify(payload)],
+	);
+	return Number(rows[0]?.next_attempt ?? 1);
+};
+
 // ─── Event Schema ────────────────────────────────────────────────────────────
 // Define all events that BetterBase can send to Inngest.
 // Typed payloads prevent runtime mismatches.
@@ -108,16 +126,15 @@ export const deliverWebhook = inngest.createFunction(
 	},
 	{ event: "betterbase/webhook.deliver" },
 	async ({ event, step }) => {
-		const {
-			webhookId,
-			webhookName,
-			url,
-			secret: eventSecret,
-			eventType,
-			tableName,
-			payload,
-			attempt,
-		} = event.data;
+			const {
+				webhookId,
+				webhookName,
+				url,
+				secret: eventSecret,
+				eventType,
+				tableName,
+				payload,
+			} = event.data;
 
 		// Step 1: Resolve secret from database if not provided in event
 		const resolvedSecret = await step.run("resolve-secret", async () => {
@@ -137,92 +154,116 @@ export const deliverWebhook = inngest.createFunction(
 		// Step 2: Send the HTTP request with timeout
 		// step.run is a code-level transaction: retries automatically on throw,
 		// runs only once on success, state persisted between retries.
-		const deliveryResult = await step.run("send-http-request", async () => {
-			const body = JSON.stringify({
-				id: crypto.randomUUID(),
-				webhook_id: webhookId,
-				table: tableName,
-				type: eventType,
-				record: payload,
-				timestamp: new Date().toISOString(),
-			});
-
-			const headers: Record<string, string> = {
-				"Content-Type": "application/json",
-				"X-Betterbase-Event": eventType,
-				"X-Betterbase-Webhook-Id": webhookId,
-			};
-
-			// Sign the payload if a secret is configured
-			if (resolvedSecret) {
-				const { createHmac } = await import("crypto");
-				const signature = createHmac("sha256", resolvedSecret).update(body).digest("hex");
-				headers["X-Betterbase-Signature"] = `sha256=${signature}`;
-			}
-
-			// Use AbortController for timeout
-			const controller = new AbortController();
-			const timeoutMs = 10000; // 10 second timeout
-			const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-			const start = Date.now();
-			let responseBody = "";
+			let deliveryResult:
+				| {
+						httpStatus: number;
+						durationMs: number;
+						responseBody: string;
+				  }
+				| undefined;
 
 			try {
-				const res = await fetch(url, {
-					method: "POST",
-					headers,
-					body,
-					signal: controller.signal,
+				deliveryResult = await step.run("send-http-request", async () => {
+					const body = JSON.stringify({
+						id: crypto.randomUUID(),
+						webhook_id: webhookId,
+						table: tableName,
+						type: eventType,
+						record: payload,
+						timestamp: new Date().toISOString(),
+					});
+
+					const headers: Record<string, string> = {
+						"Content-Type": "application/json",
+						"X-Betterbase-Event": eventType,
+						"X-Betterbase-Webhook-Id": webhookId,
+					};
+
+					// Sign the payload if a secret is configured
+					if (resolvedSecret) {
+						const { createHmac } = await import("crypto");
+						const signature = createHmac("sha256", resolvedSecret).update(body).digest("hex");
+						headers["X-Betterbase-Signature"] = `sha256=${signature}`;
+					}
+
+					// Use AbortController for timeout
+					const controller = new AbortController();
+					const timeoutMs = 10000; // 10 second timeout
+					const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+					const start = Date.now();
+					let responseBody = "";
+
+					try {
+						const res = await fetch(url, {
+							method: "POST",
+							headers,
+							body,
+							signal: controller.signal,
+						});
+						const duration = Date.now() - start;
+						responseBody = await res.text().catch(() => "");
+
+						if (!res.ok) {
+							// Throwing causes Inngest to retry with exponential backoff
+							throw new Error(
+								`Webhook delivery failed: HTTP ${res.status} from ${url} — ${responseBody.slice(0, 200)}`,
+							);
+						}
+
+						return {
+							httpStatus: res.status,
+							durationMs: duration,
+							responseBody: responseBody.slice(0, 500),
+						};
+					} catch (err: any) {
+						// Handle timeout
+						if (err.name === "AbortError" || err.message?.includes("abort")) {
+							throw new Error(`Webhook delivery timed out after ${timeoutMs}ms`);
+						}
+						throw err;
+					} finally {
+						clearTimeout(timeoutId);
+					}
 				});
-				const duration = Date.now() - start;
-				responseBody = await res.text().catch(() => "");
-
-				if (!res.ok) {
-					// Throwing causes Inngest to retry with exponential backoff
-					throw new Error(
-						`Webhook delivery failed: HTTP ${res.status} from ${url} — ${responseBody.slice(0, 200)}`,
-					);
-				}
-
-				return {
-					httpStatus: res.status,
-					durationMs: duration,
-					responseBody: responseBody.slice(0, 500),
-				};
 			} catch (err: any) {
-				const duration = Date.now() - start;
-				// Handle timeout
-				if (err.name === "AbortError" || err.message?.includes("abort")) {
-					throw new Error(`Webhook delivery timed out after ${timeoutMs}ms`);
-				}
+				await step.run("log-failed-delivery", async () => {
+					const { getPool } = await import("./db");
+					const pool = getPool();
+					const attemptCount = await getNextDeliveryAttempt(webhookId, eventType, payload);
+
+					await pool.query(
+						`INSERT INTO betterbase_meta.webhook_deliveries
+	           (webhook_id, event_type, payload, status, response_body, delivered_at, attempt_count)
+	         VALUES ($1, $2, $3, 'failed', $4, NOW(), $5)`,
+						[webhookId, eventType, JSON.stringify(payload), String(err?.message ?? err), attemptCount],
+					);
+				});
 				throw err;
-			} finally {
-				clearTimeout(timeoutId);
 			}
-		});
 
 		// Step 2: Persist the delivery record with response_body
 		// This step only runs after the HTTP request succeeds.
-		await step.run("log-successful-delivery", async () => {
-			const { getPool } = await import("./db");
-			const pool = getPool();
+			await step.run("log-successful-delivery", async () => {
+				const { getPool } = await import("./db");
+				const pool = getPool();
+				const attemptCount = await getNextDeliveryAttempt(webhookId, eventType, payload);
 
-			await pool.query(
-				`INSERT INTO betterbase_meta.webhook_deliveries
-           (webhook_id, event_type, payload, status, response_code, response_body, duration_ms, delivered_at, attempt_count)
-         VALUES ($1, $2, $3, 'success', $4, $5, $6, NOW(), $7)`,
-				[
-					webhookId,
-					eventType,
-					JSON.stringify(payload),
-					deliveryResult.httpStatus,
-					deliveryResult.responseBody,
-					deliveryResult.durationMs,
-					attempt,
-				],
-			);
-		});
+				await pool.query(
+					`INSERT INTO betterbase_meta.webhook_deliveries
+	           (webhook_id, event_type, payload, status, response_code, response_body, duration_ms, delivered_at, attempt_count)
+	         VALUES ($1, $2, $3, 'success', $4, $5, $6, NOW(), $7)`,
+					[
+						webhookId,
+						eventType,
+						JSON.stringify(payload),
+						deliveryResult?.httpStatus ?? null,
+						deliveryResult?.responseBody ?? null,
+						deliveryResult?.durationMs ?? null,
+						attemptCount,
+					],
+				);
+			});
 
 		return {
 			success: true,

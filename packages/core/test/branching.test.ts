@@ -397,26 +397,21 @@ describe("branching/database - DatabaseBranching", () => {
 
 	describe("listPreviewDatabases", () => {
 		test("returns array of preview database names", async () => {
-			// Without actual DB connection, this will fail
-			// But we can verify it returns a promise
-			const promise = dbBranching.listPreviewDatabases();
-			expect(promise).toBeInstanceOf(Promise);
+			await expect(dbBranching.listPreviewDatabases()).rejects.toThrow();
 		});
 	});
 
 	describe("previewDatabaseExists", () => {
 		test("returns promise for checking database existence", async () => {
-			const promise = dbBranching.previewDatabaseExists("preview_test");
-			expect(promise).toBeInstanceOf(Promise);
+			await expect(dbBranching.previewDatabaseExists("preview_test")).rejects.toThrow();
 		});
 	});
 
 	describe("teardownPreviewDatabase", () => {
 		test("returns promise for teardown operation", async () => {
-			const promise = dbBranching.teardownPreviewDatabase(
-				"postgres://user:password@localhost:5432/preview_test",
-			);
-			expect(promise).toBeInstanceOf(Promise);
+			await expect(
+				dbBranching.teardownPreviewDatabase("postgres://user:password@localhost:5432/preview_test"),
+			).rejects.toThrow();
 		});
 	});
 });
