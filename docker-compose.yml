@@ -1,132 +1,66 @@
 # ============================================================================
-# Betterbase Docker Compose
+# Betterbase Local Development Docker Compose
 #
-# Development environment with PostgreSQL and the Betterbase application.
+# Quick start for local development. Starts PostgreSQL, MinIO, and Inngest.
+# Betterbase server runs locally with hot-reload.
 #
 # Usage:
-#   docker-compose up -d          # Start all services
-#   docker-compose logs -f app    # View app logs
-#   docker-compose down           # Stop all services
-#   docker-compose down -v        # Stop and remove volumes
+#   docker compose up -d
+#   bun run dev
 # ============================================================================
 
 services:
-  # --------------------------------------------------------------------------
-  # Betterbase Application
-  # --------------------------------------------------------------------------
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile.project
-    ports:
-      - "3000:3000"
-    environment:
-      # Database - connect to postgres service
-      DATABASE_URL: postgres://betterbase:betterbase_secret@postgres:5432/betterbase
-      
-      # Auth
-      AUTH_SECRET: ${AUTH_SECRET:-your-super-secret-key-min-32-chars-long-change-in-production}
-      AUTH_URL: http://localhost:3000
-      
-      # Storage (MinIO for S3-compatible storage)
-      STORAGE_PROVIDER: minio
-      STORAGE_ENDPOINT: http://minio:9000
-      STORAGE_BUCKET: betterbase
-      STORAGE_ACCESS_KEY: minioadmin
-      STORAGE_SECRET_KEY: minioadmin
-      
-      # Node environment
-      NODE_ENV: ${NODE_ENV:-development}
-      PORT: "3000"
-      
-      # CORS
-      CORS_ORIGIN: http://localhost:3000,http://localhost:5173
-      
-    volumes:
-      # Mount source for hot reload in development
-      - ./src:/app/src
-      # Storage volume for uploaded files
-      - betterbase_storage:/app/storage
-    depends_on:
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_started
-    restart: unless-stopped
-    networks:
-      - betterbase-network
-
-  # --------------------------------------------------------------------------
   # PostgreSQL Database
-  # --------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
+    container_name: betterbase-postgres-local
+    restart: unless-stopped
     environment:
       POSTGRES_USER: betterbase
-      POSTGRES_PASSWORD: betterbase_secret
+      POSTGRES_PASSWORD: betterbase_dev_password
       POSTGRES_DB: betterbase
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      # Initialize with schema on first run (optional)
-      # - ./init-schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U betterbase -d betterbase"]
+      test: ["CMD-SHELL", "pg_isready -U betterbase"]
       interval: 5s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
-    networks:
-      - betterbase-network
 
-  # --------------------------------------------------------------------------
-  # MinIO for S3-compatible storage (development)
-  # --------------------------------------------------------------------------
+  # MinIO (S3-compatible storage)
   minio:
     image: minio/minio:latest
+    container_name: betterbase-minio-local
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    volumes:
-      - minio_data:/data
+      MINIO_ROOT_USER: betterbase
+      MINIO_ROOT_PASSWORD: betterbase_dev_password
     ports:
       - "9000:9000"
       - "9001:9001"
+    volumes:
+      - minio_local_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - betterbase-network
 
-  # --------------------------------------------------------------------------
-  # Optional: Mailhog for email testing (development)
-  # --------------------------------------------------------------------------
-  # mailhog:
-  #   image: mailhog/mailhog:latest
-  #   ports:
-  #     - "1025:1025"  # SMTP
-  #     - "8025:8025"  # Web UI
-  #   networks:
-  #     - betterbase-network
+  # Inngest (Durable Workflow Engine)
+  inngest:
+    image: inngest/inngest:v1.17.5
+    container_name: betterbase-inngest-local
+    restart: unless-stopped
+    command: inngest dev --host 0.0.0.0 --port 8288
+    ports:
+      - "8288:8288"
+    volumes:
+      - inngest_local_data:/data
 
-# ----------------------------------------------------------------------------
-# Networks
-# ----------------------------------------------------------------------------
-networks:
-  betterbase-network:
-    driver: bridge
-
-# ----------------------------------------------------------------------------
-# Volumes
-# ----------------------------------------------------------------------------
 volumes:
-  postgres_data:
-    driver: local
-  betterbase_storage:
-    driver: local
-  minio_data:
-    driver: local
+  postgres_local_data:
+  minio_local_data:
+  inngest_local_data:

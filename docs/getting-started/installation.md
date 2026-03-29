@@ -1,14 +1,14 @@
 # Installation
 
-This guide covers how to install and set up BetterBase in your development environment.
+This guide covers how to install and set up Betterbase in your development environment.
 
 ## Prerequisites
 
-Before installing BetterBase, ensure you have the following:
+Before installing Betterbase, ensure you have the following:
 
-- **Bun** (v1.0+) - The JavaScript runtime powering BetterBase
+- **Docker** & **Docker Compose** - For running infrastructure services
+- **Bun** (v1.0+) - The JavaScript runtime powering Betterbase
 - **Git** - For version control
-- **Node.js** (v18+) - Required for some optional tools
 
 ### Installing Bun
 
@@ -32,6 +32,21 @@ Verify the installation:
 
 ```bash
 bun --version
+```
+
+### Installing Docker
+
+BetterBase uses Docker for local development infrastructure (PostgreSQL, MinIO, Inngest).
+
+Install Docker Desktop for macOS/Windows, or on Linux:
+
+```bash
+# Ubuntu/Debian
+curl -fsSL https://get.docker.com | sh
+
+# Verify Docker
+docker --version
+docker compose version
 ```
 
 ## Installing BetterBase CLI
@@ -88,49 +103,56 @@ bun add @betterbase/client
 
 ## Project Initialization
 
-Create your first BetterBase project:
+Clone and set up the project:
 
 ```bash
-# Create a new project
-bb init my-app
-
-# Navigate to the project
-cd my-app
+# Clone the repository
+git clone https://github.com/betterbase/betterbase.git
+cd betterbase
 
 # Install dependencies
 bun install
+
+# Start infrastructure (PostgreSQL, MinIO, Inngest)
+docker compose up -d
+
+# Start development server with hot-reload
+bun run dev
 ```
 
 This creates the following project structure:
 
 ```
-my-app/
-├── betterbase.config.ts    # Project configuration
-├── drizzle.config.ts       # Database configuration
-├── src/
-│   ├── db/
-│   │   ├── schema.ts       # Database schema
-│   │   └── migrate.ts      # Migration utilities
-│   ├── functions/          # Serverless functions
-│   ├── auth/               # Authentication setup
-│   └── routes/             # API routes
-└── package.json
+betterbase/
+├── packages/
+│   ├── core/          # Core framework
+│   ├── cli/           # CLI tools
+│   ├── client/        # Client SDK
+│   ├── server/        # Server implementation
+│   └── shared/        # Shared utilities
+├── apps/
+│   └── dashboard/     # Admin dashboard
+├── docker-compose.yml # Local development services
+└── docs/             # Documentation
 ```
 
-## Environment Setup
+## Quick Start with Docker
 
-### Development Environment
-
-For local development, BetterBase uses SQLite by default:
+For the simplest setup, start infrastructure services with Docker:
 
 ```bash
-# Start development server
-bb dev
+# Start PostgreSQL, MinIO, and Inngest
+docker compose up -d
+
+# Run the server locally (with hot-reload)
+bun run dev
 ```
 
-Your API will be available at `http://localhost:3000`.
+Your API will be available at `http://localhost:3001`.
 
-### Production Environment
+See [Docker Setup Guide](../docker-setup.md) for detailed instructions.
+
+## Production Environment
 
 Set up environment variables for production:
 
@@ -138,11 +160,11 @@ Set up environment variables for production:
 # Database
 DATABASE_URL=postgresql://user:password@host:5432/db
 
-# Authentication
+# Authentication - Generate: openssl rand -base64 32
 AUTH_SECRET=your-secret-key-min-32-chars
 AUTH_URL=https://your-domain.com
 
-# Storage (optional)
+# Storage (optional - uses MinIO by default)
 STORAGE_PROVIDER=s3
 STORAGE_BUCKET=your-bucket
 AWS_ACCESS_KEY_ID=your-key
@@ -151,33 +173,31 @@ AWS_SECRET_ACCESS_KEY=your-secret
 
 See the [Configuration Guide](./configuration.md) for all available options.
 
-## Supported Databases
-
-BetterBase supports multiple database providers:
-
-| Provider | Use Case | Connection String |
-|----------|----------|-------------------|
-| **SQLite** | Local development | `file:./dev.db` |
-| **PostgreSQL** | Production | `postgres://...` |
-| **Neon** | Serverless | `postgres://...` |
-| **Turso** | Edge/Serverless | libSQL URL |
-| **PlanetScale** | Serverless MySQL | MySQL URL |
-| **Supabase** | Supabase hosted | `postgres://...` |
-
 ## Verifying Your Setup
 
-Run the health check to verify everything is working:
+Once Docker services are running and the server is started:
 
 ```bash
-# The development server should show:
-# - http://localhost:3000 - API root
-# - http://localhost:3000/graphql - GraphQL playground
-# - http://localhost:3000/api/auth/* - Auth endpoints
-# - http://localhost:3000/storage/* - Storage endpoints
+# Check Docker services are healthy
+docker compose ps
+
+# Check the server is running
+curl http://localhost:3001/health
 ```
+
+You should see:
+- Docker services: `postgres`, `minio`, `inngest` - all running
+- Server health check: returns successful response
+
+Available endpoints:
+- `http://localhost:3001` - API root
+- `http://localhost:3001/graphql` - GraphQL playground
+- `http://localhost:3001/api/auth/*` - Auth endpoints
+- `http://localhost:3001/storage/*` - Storage endpoints
 
 ## Next Steps
 
 - [Quick Start Guide](./quick-start.md) - Get running in 5 minutes
 - [Your First Project](./your-first-project.md) - Build a complete application
 - [Configuration](./configuration.md) - Customize your setup
+- [Docker Setup Guide](../docker-setup.md) - Detailed Docker configuration
