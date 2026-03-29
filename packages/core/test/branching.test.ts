@@ -722,20 +722,18 @@ describe("branching - BranchManager", () => {
 			expect(branch).toBeUndefined();
 		});
 
-		test.skip("updates lastAccessedAt when retrieving", async () => {
+		test("updates lastAccessedAt when retrieving", async () => {
 			const createResult = await branchManager.createBranch({ name: "access-test-unique" });
-			if (!createResult.success || !createResult.branch) {
-				return;
-			}
-			const branchId = createResult.branch.id;
+			expect(createResult.success).toBe(true);
+			expect(createResult.branch).toBeDefined();
+			const branchId = createResult.branch!.id;
 
-			const beforeAccess = createResult.branch.lastAccessedAt.getTime();
+			const beforeAccess = createResult.branch!.lastAccessedAt.getTime();
 			await new Promise((resolve) => setTimeout(resolve, 10));
 
 			const branch = branchManager.getBranch(branchId);
-			if (branch) {
-				expect(branch.lastAccessedAt.getTime()).toBeGreaterThanOrEqual(beforeAccess);
-			}
+			expect(branch).toBeDefined();
+			expect(branch!.lastAccessedAt.getTime()).toBeGreaterThan(beforeAccess);
 		});
 	});
 
@@ -767,9 +765,8 @@ describe("branching - BranchManager", () => {
 		test("filters by status", async () => {
 			const result1 = await branchManager.createBranch({ name: "active-branch" });
 			const result2 = await branchManager.createBranch({ name: "sleep-branch" });
-			if (!result1.success || !result2.success) {
-				return;
-			}
+			expect(result1.success).toBe(true);
+			expect(result2.success).toBe(true);
 			const branchId = result2.branch!.id;
 
 			await branchManager.sleepBranch(branchId);

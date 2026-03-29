@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, mock } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -13,7 +13,7 @@ afterAll(() => {
 	rmSync(tmpDir, { recursive: true, force: true });
 });
 
-describe("runDevCommand", () => {
+describe("project directory structure", () => {
 	it("creates project structure for dev server", async () => {
 		const testDir = mkdtempSync(path.join(os.tmpdir(), "bb-dev-structure-"));
 

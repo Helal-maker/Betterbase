@@ -22,6 +22,8 @@ export const posts = sqliteTable('posts', {
 });
 `;
 
+let runGenerateCrudCommand: (projectRoot: string, tableName: string) => Promise<void>;
+
 async function scaffoldProject(dir: string): Promise<void> {
 	await mkdir(join(dir, "src/db"), { recursive: true });
 	await mkdir(join(dir, "src/routes"), { recursive: true });
@@ -62,6 +64,8 @@ describe("runGenerateCrudCommand", () => {
 	beforeEach(async () => {
 		tmpDir = await mkdtemp(join(tmpdir(), "bb-gen-"));
 		await scaffoldProject(tmpDir);
+		const module = await import("../src/commands/generate");
+		runGenerateCrudCommand = module.runGenerateCrudCommand;
 	});
 
 	afterEach(async () => {
@@ -69,92 +73,79 @@ describe("runGenerateCrudCommand", () => {
 	});
 
 	test("creates src/routes/posts.ts for posts table", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
 		expect(existsSync(join(tmpDir, "src/routes/posts.ts"))).toBe(true);
 	});
 
 	test("generated route exports postsRoute", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("postsRoute");
 	});
 
 	test("generated route contains GET / handler", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".get('/'");
 	});
 
 	test("generated route contains GET /:id handler", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".get('/:id'");
 	});
 
 	test("generated route contains POST handler", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".post('/'");
 	});
 
 	test("generated route contains PATCH handler", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".patch('/:id'");
 	});
 
 	test("generated route contains DELETE handler", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain(".delete('/:id'");
 	});
 
 	test("generated route imports Zod and uses zValidator", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("zValidator");
 		expect(content).toContain("z.object");
 	});
 
 	test("generated route includes pagination schema", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("paginationSchema");
 	});
 
 	test("generated route broadcasts realtime events", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const content = await readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
+		const content = readFileSync(join(tmpDir, "src/routes/posts.ts"), "utf-8");
 		expect(content).toContain("realtime.broadcast");
 	});
 
 	test("updates src/routes/index.ts to register the new route", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await runGenerateCrudCommand(tmpDir, "posts");
-		const router = await readFileSync(join(tmpDir, "src/routes/index.ts"), "utf-8");
+		const router = readFileSync(join(tmpDir, "src/routes/index.ts"), "utf-8");
 		expect(router).toContain("postsRoute");
 		expect(router).toContain("/api/posts");
 	});
 
 	test("throws for a table that does not exist in the schema", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await expect(runGenerateCrudCommand(tmpDir, "nonexistent_table_xyz")).rejects.toThrow(
 			'Table "nonexistent_table_xyz" not found in schema.',
 		);
 	});
 
 	test("throws when schema file does not exist", async () => {
-		const { runGenerateCrudCommand } = await import("../src/commands/generate");
 		await rm(join(tmpDir, "src/db/schema.ts"));
 		await expect(runGenerateCrudCommand(tmpDir, "posts")).rejects.toThrow("Schema file not found");
 	});
