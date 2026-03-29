@@ -72,7 +72,7 @@ services:
       - betterbase-internal
 
   inngest:
-    image: inngest/inngest:latest
+    image: inngest/inngest:v1.17.5
     container_name: betterbase-inngest
     restart: unless-stopped
     command: inngest dev --host 0.0.0.0 --port 8288
@@ -80,11 +80,6 @@ services:
       INNGEST_LOG_LEVEL: ${INNGEST_LOG_LEVEL:-info}
     volumes:
       - inngest_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8288/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - betterbase-internal
 
@@ -102,7 +97,7 @@ services:
       minio-init:
         condition: service_completed_successfully
       inngest:
-        condition: service_healthy
+        condition: service_started
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-betterbase}:${POSTGRES_PASSWORD:-betterbase}@postgres:5432/${POSTGRES_DB:-betterbase}
       BETTERBASE_JWT_SECRET: ${BETTERBASE_JWT_SECRET:?JWT secret required - set BETTERBASE_JWT_SECRET in .env}
@@ -113,7 +108,7 @@ services:
       STORAGE_BUCKET: betterbase
       PORT: "3001"
       NODE_ENV: production
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
       INNGEST_BASE_URL: http://inngest:8288
       INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY:-}
       INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY:-}

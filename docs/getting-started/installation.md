@@ -109,7 +109,7 @@ bun add @betterbase/client
 
 ## Project Initialization
 
-Create your first BetterBase project:
+Clone and set up the project:
 
 ```bash
 # Clone the repository

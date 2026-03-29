@@ -28,7 +28,6 @@ RUN apk add --no-cache wget=1.25.0-r1
 
 COPY --from=builder /app/packages/server/dist ./dist
 
-# Health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3001/health || exit 1
 
