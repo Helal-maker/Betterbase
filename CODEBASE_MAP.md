@@ -1,6 +1,6 @@
 # BetterBase — Codebase Map
 
-> Last updated: 2026-03-28
+> Last updated: 2026-03-29
 
 ## What is BetterBase?
 
@@ -279,16 +279,17 @@ betterbase/
 │   │   │   │       ├── watcher.ts         # File watcher for hot reload
 │   │   │   │       ├── error-formatter.ts  # Error formatting
 │   │   │   │       └── query-log.ts       # Query logging (NEW)
-│   │   │   └── utils/              # CLI utilities (8 files)
-│   │   │       ├── context-generator.ts   # Generates .betterbase-context.json
-│   │   │       ├── logger.ts              # Colored console logging
-│   │   │       ├── prompts.ts              # Interactive prompts (Inquirer)
-│   │   │       ├── provider-prompts.ts     # Database provider selection
-│   │   │       ├── route-scanner.ts        # Hono route scanning
-│   │   │       ├── schema-scanner.ts       # Drizzle schema scanning
-│   │   │       ├── scanner.ts              # Schema scanner core
-│   │   │       └── migrate-utils.ts        # Migration utilities
-│   │   └── test/                  # CLI tests (20+ test files)
+│   │   │   └── utils/              # CLI utilities (9 files)
+│   │   │   │       ├── api-client.ts          # API client for cloud operations
+│   │   │   │       ├── context-generator.ts   # Generates .betterbase-context.json
+│   │   │   │       ├── credentials.ts         # Credentials management
+│   │   │   │       ├── logger.ts              # Colored console logging
+│   │   │   │       ├── prompts.ts              # Interactive prompts (Inquirer)
+│   │   │   │       ├── provider-prompts.ts     # Database provider selection
+│   │   │   │       ├── route-scanner.ts        # Hono route scanning
+│   │   │   │       ├── schema-scanner.ts       # Drizzle schema scanning
+│   │   │   │       └── scanner.ts              # Schema scanner core
+│   │   └── test/                  # CLI tests (30+ test files)
 │   │
 │   ├── client/                    # @betterbase/client - TypeScript SDK
 │   │   ├── package.json
@@ -304,8 +305,14 @@ betterbase/
 │   │   │   ├── query-builder.ts   # Chainable query builder
 │   │   │   ├── realtime.ts        # Realtime subscription client
 │   │   │   ├── storage.ts         # Storage client
-│   │   │   └── types.ts           # TypeScript definitions
-│   │   └── test/                  # Client tests (6+ test files)
+│   │   │   ├── types.ts           # TypeScript definitions
+│   │   │   └── iac/               # IaC client (Phase 3)
+│   │   │       ├── index.ts       # IaC exports
+│   │   │       ├── hooks.ts       # React hooks (useQuery, useMutation, useAction)
+│   │   │       ├── vanilla.ts      # Non-React client
+│   │   │       ├── paginated-query.ts  # Paginated query support
+│   │   │       └── embeddings.ts   # Embedding utilities
+│   │   └── test/                  # Client tests (10+ test files)
 │   │
 │   ├── core/                      # @betterbase/core - Core backend engine
 │   │   ├── package.json
@@ -405,6 +412,7 @@ betterbase/
 │   │   │   └── 014_inngest_support.sql
 │   │   └── src/
 │   │       ├── index.ts           # Server entry point
+│   │       ├── types.d.ts         # TypeScript declarations
 │   │       ├── lib/
 │   │       │   ├── db.ts          # Database connection
 │   │       │   ├── migrate.ts      # Migration runner
@@ -412,7 +420,10 @@ betterbase/
 │   │       │   ├── auth.ts         # Auth utilities
 │   │       │   ├── admin-middleware.ts  # Admin auth middleware
 │   │       │   ├── inngest.ts     # Inngest client & functions
-│   │       │   └── webhook-dispatcher.ts  # Webhook event dispatcher
+│   │       │   ├── webhook-dispatcher.ts  # Webhook event dispatcher
+│   │       │   ├── webhook-logger.ts  # Webhook delivery logging
+│   │       │   ├── function-logger.ts  # Function invocation logging
+│   │       │   └── audit.ts       # Audit logging
 │   │       └── routes/
 │   │           ├── admin/         # Admin API routes
 │   │           │   ├── index.ts
@@ -420,10 +431,32 @@ betterbase/
 │   │           │   ├── projects.ts
 │   │           │   ├── users.ts
 │   │           │   ├── metrics.ts
+│   │           │   ├── metrics-enhanced.ts  # Enhanced metrics
 │   │           │   ├── storage.ts
 │   │           │   ├── webhooks.ts
 │   │           │   ├── functions.ts
-│   │           │   └── logs.ts
+│   │           │   ├── logs.ts
+│   │           │   ├── audit.ts
+│   │           │   ├── roles.ts          # Role management
+│   │           │   ├── notifications.ts  # Notification system
+│   │           │   ├── smtp.ts           # SMTP configuration
+│   │           │   ├── api-keys.ts      # API key management
+│   │           │   ├── cli-sessions.ts  # CLI session management
+│   │           │   ├── inngest.ts       # Inngest integration
+│   │           │   ├── instance.ts      # Instance settings
+│   │           │   └── project-scoped/  # Project-specific routes
+│   │           │       ├── index.ts
+│   │           │       ├── database.ts   # Database management
+│   │           │       ├── functions.ts  # Function management
+│   │           │       ├── users.ts      # Project users
+│   │           │       ├── env.ts        # Environment variables
+│   │           │       ├── auth-config.ts # Auth configuration
+│   │           │       ├── webhooks.ts   # Project webhooks
+│   │           │       ├── realtime.ts   # Realtime settings
+│   │           │       └── iac.ts        # IaC management
+│   │           ├── betterbase/    # BetterBase IaC API routes
+│   │           │   ├── index.ts   # Main IaC API handler
+│   │           │   └── ws.ts      # WebSocket handler
 │   │           └── device/        # Device auth routes
 │   │               └── index.ts
 │   │
@@ -1064,6 +1097,38 @@ Infrastructure as Code module - Convex-inspired database and functions.
 **Purpose:** Registry for all IaC functions.
 - **Exports:** `registerFunction`, `lookupFunction`, `listFunctions`
 
+#### [`iac/storage/`](packages/core/src/iac/storage/)
+**Purpose:** IaC storage context for file operations.
+
+#### [`iac/storage/storage-ctx.ts`](packages/core/src/iac/storage/storage-ctx.ts)
+**Purpose:** Storage operations for IaC functions.
+- **Exports:** `StorageContext`, `createStorageContext`
+- **Key Features:**
+  - File upload and download
+  - Signed URL generation
+  - Storage policy enforcement
+
+#### [`iac/realtime/`](packages/core/src/iac/realtime/)
+**Purpose:** IaC realtime subscription infrastructure.
+
+#### [`iac/realtime/table-dep-inferrer.ts`](packages/core/src/iac/realtime/table-dep-inferrer.ts)
+**Purpose:** Infers table dependencies from queries for cache invalidation.
+- **Exports:** `inferTableDependencies`, `TableDependencies`
+
+#### [`iac/realtime/invalidation-manager.ts`](packages/core/src/iac/realtime/invalidation-manager.ts)
+**Purpose:** Manages query result cache invalidation.
+- **Exports:** `InvalidationManager`, `createInvalidationManager`
+- **Key Features:**
+  - Tracks query dependencies
+  - Invalidates cached results on data changes
+
+#### [`iac/realtime/subscription-tracker.ts`](packages/core/src/iac/realtime/subscription-tracker.ts)
+**Purpose:** Tracks active subscriptions for realtime updates.
+- **Exports:** `SubscriptionTracker`, `createSubscriptionTracker`
+- **Key Features:**
+  - Manages subscription lifecycle
+  - Broadcasts updates to subscribers
+
 ### webhooks/
 
 #### [`webhooks/index.ts`](packages/core/src/webhooks/index.ts)
@@ -1273,6 +1338,14 @@ Realtime subscriptions module for WebSocket-based live data updates.
   - OpenAI embeddings support
   - Cohere embeddings support
   - Text-to-vector conversion
+
+#### [`src/iac/paginated-query.ts`](packages/client/src/iac/paginated-query.ts)
+**Purpose:** Paginated query support for IaC functions.
+- **Exports:** `PaginatedQuery`, `createPaginatedQuery`
+- **Key Features:**
+  - Cursor-based pagination
+  - Limit and offset support
+  - Total count estimation
 
 ---
 
@@ -2003,27 +2076,23 @@ bun test
 
 All notable changes to BetterBase will be documented in this file.
 
-### Recent Updates (2026-03-26)
+### Recent Updates (2026-03-29)
 
-#### New Features
-- **AI Context Generation**: Added intelligent context generation for AI assistants to understand project structure and provide more accurate recommendations
-- **Branch Management**: New `bb branch` command for creating and managing database branches for development, staging, and production
-- **Vector Search**: Integrated vector search capabilities for AI-powered semantic search functionality
-- **Auto-REST**: Automatic REST API generation from Drizzle schema definitions
-- **Enhanced CLI**: Expanded from 12 to 21 commands with improved migration, storage, webhook, and function management
+#### Documentation Updates
+- **CODEBASE_MAP.md**: Updated to reflect new IaC realtime modules, server routes, and client features
 
-#### Self-Hosted Deployment
-- **Admin Dashboard**: New React-based admin dashboard (`apps/dashboard`) for self-hosted instances
-- **Server Package**: Comprehensive `@betterbase/server` package with admin API, project management, metrics, and device authentication
-- **Nginx Reverse Proxy**: Docker-based nginx configuration for production deployments
+#### New Modules Added
+- **IaC Storage**: Added `iac/storage/storage-ctx.ts` for file operations in IaC functions
+- **IaC Realtime**: Added `iac/realtime/` subdirectory with table dependency inference, invalidation manager, and subscription tracker
+- **Server Routes**: Added project-scoped routes (database, functions, users, env, auth-config, webhooks, realtime, iac)
+- **Server Libs**: Added webhook-logger.ts, function-logger.ts, audit.ts
+- **CLI Utils**: Added api-client.ts, credentials.ts
+- **Client IaC**: Added paginated-query.ts for cursor-based pagination
 
 #### Package Updates
-- **packages/cli**: 21 commands (init, dev, migrate, migrate preview, migrate production, migrate rollback, migrate history, auth, auth add-provider, generate crud, graphql, graphql playground, storage init, storage list, storage upload, rls, rls create, rls list, rls disable, rls test, webhook, function, branch, login, logout)
-- **packages/client**: Auth, Query Builder, Realtime, Storage, Errors modules
-- **packages/core**: Config, Functions, GraphQL, Middleware, Migration, Providers, RLS, Storage, Vector, Branching, Auto-REST, Webhooks, Logger, Realtime
-- **packages/server**: Self-hosted server with admin routes, device auth, migrations
-- **packages/shared**: Types, Errors, Constants, Utils
-- **apps/dashboard**: React admin dashboard with project management, metrics, storage, webhooks, functions pages
+- **packages/cli**: 30+ test files, 9 utility modules
+- **packages/client**: IaC client with hooks, vanilla client, paginated queries, embeddings
+- **packages/server**: Enhanced admin routes with roles, notifications, SMTP, API keys, CLI sessions, Inngest integration
 - **apps/test-project**: Example project demonstrating all features
 
 ---
