@@ -1,6 +1,16 @@
 # BetterBase — Codebase Map
 
-> Last updated: 2026-03-29
+> Last updated: 2026-03-30
+
+## Canonical Orientation Files
+
+Use these as the official project index set:
+
+1. `NOTICE.md` — backbone summary and navigation entry point.
+2. `README.md` — product overview and onboarding.
+3. `CODEBASE_MAP.md` — architecture and package map (this file).
+4. `docs/README.md` — complete documentation map.
+5. `docs/guides/provider-capabilities-and-rollout.md` — provider limitations and rollout strategy.
 
 ## What is BetterBase?
 
@@ -2100,4 +2110,3 @@ All notable changes to BetterBase will be documented in this file.
 ## License
 
 BetterBase is released under the MIT license.
-

@@ -17,9 +17,27 @@ Blazing-fast backend development with Sub-100ms Local Dev — Built on Bun + SQL
 
 *Database • Authentication • Realtime Subscriptions • Storage • Serverless Functions • Vector Search*
 
-**Last Updated: 2026-03-29**
+**Last Updated: 2026-03-30**
 
 </div>
+
+---
+
+## Project Backbone (Start Here)
+
+If you want the fastest path to understanding this repository, start with these files:
+
+1. [`NOTICE.md`](./NOTICE.md) — project backbone, index, and provider limitation notice.
+2. [`CODEBASE_MAP.md`](./CODEBASE_MAP.md) — package/module map and architecture details.
+3. [`docs/README.md`](./docs/README.md) — full documentation index.
+4. [`docs/guides/provider-capabilities-and-rollout.md`](./docs/guides/provider-capabilities-and-rollout.md) — provider limitations and rollout plan.
+
+### Provider Rollout Status
+
+BetterBase supports multiple providers, but capabilities vary by provider (RLS, branching, CDC, GraphQL).
+Use the rollout guide before implementing tenant isolation or provider-specific features:
+
+- [Provider Capabilities, Limitations, and Rollout Plan](./docs/guides/provider-capabilities-and-rollout.md)
 
 ---
 
