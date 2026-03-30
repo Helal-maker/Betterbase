@@ -41,3 +41,4 @@ export function truncate(str: string, n: number): string {
 export function copyToClipboard(text: string): Promise<void> {
 	return navigator.clipboard.writeText(text);
 }
+ 

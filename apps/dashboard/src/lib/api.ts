@@ -94,3 +94,4 @@ export const api = {
 		return res.blob();
 	},
 };
+ 

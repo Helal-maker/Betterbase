@@ -63,3 +63,4 @@ export const inngestApi = {
 
 	getJobs: () => fetchInngest<{ jobs: any[] }>(`${API_BASE}/jobs`),
 };
+ 

@@ -98,3 +98,4 @@ export const routes: RouteObject[] = [
 	},
 	{ path: "*", element: wrap(NotFoundPage) },
 ];
+ 

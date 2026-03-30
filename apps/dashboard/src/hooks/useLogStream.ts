@@ -113,3 +113,4 @@ export function useLogStream(opts: UseLogStreamOptions): UseLogStreamResult {
 
 	return { logs, isPolling, pause, resume, clear };
 }
+ 
