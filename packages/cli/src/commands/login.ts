@@ -1,7 +1,8 @@
 import chalk from "chalk";
 import type { Command } from "commander";
 import { clearCredentials, loadCredentials, saveCredentials } from "../utils/credentials";
-import { error, info, success } from "../utils/logger";
+import { blank, box, error, keyValue, section, success, sym } from "../utils/logger";
+import { createSpinner } from "../utils/spinner";
 
 const DEFAULT_SERVER_URL = "https://api.betterbase.io";
 const POLL_INTERVAL_MS = 5000;
@@ -28,7 +29,8 @@ export function registerLoginCommand(program: Command) {
 export async function runLoginCommand(opts: { serverUrl?: string } = {}) {
 	const serverUrl = (opts.serverUrl ?? DEFAULT_SERVER_URL).replace(/\/$/, "");
 
-	info(`Logging in to ${chalk.cyan(serverUrl)} ...`);
+	blank();
+	section("Authorize CLI");
 
 	// Step 1: Request device code
 	let deviceCode: string;
@@ -51,18 +53,22 @@ export async function runLoginCommand(opts: { serverUrl?: string } = {}) {
 		process.exit(1);
 	}
 
-	console.log("");
-	console.log(chalk.bold("Open this URL in your browser to authorize:"));
-	console.log(chalk.cyan(`${verificationUri}?code=${userCode}`));
-	console.log("");
-	console.log(`Your code: ${chalk.yellow.bold(userCode)}`);
-	console.log("Waiting for authorization...");
+	keyValue("Instance", serverUrl);
+	keyValue("Your code", chalk.bold(chalk.yellow(userCode)));
+	blank();
+	console.log(`  ${chalk.dim("Open:")} ${chalk.cyan(`${verificationUri}?code=${userCode}`)}`);
+	blank();
+	console.log(chalk.dim("  Waiting for browser authorization") + chalk.dim(" (5 min timeout)..."));
 
 	// Step 2: Poll for token
 	const deadline = Date.now() + POLL_TIMEOUT_MS;
+	const startedAt = Date.now();
+	const spinner = createSpinner("Waiting for authorization...").start();
 
 	while (Date.now() < deadline) {
 		await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+		const elapsed = Date.now() - startedAt;
+		spinner.text = `Waiting for authorization ${chalk.dim(`(${Math.round(elapsed / 1000)}s)`)}`;
 
 		const res = await fetch(`${serverUrl}/device/token`, {
 			method: "POST",
@@ -75,6 +81,7 @@ export async function runLoginCommand(opts: { serverUrl?: string } = {}) {
 		if (!res.ok) {
 			const body = (await res.json()) as { error?: string };
 			if (body.error === "authorization_pending") continue;
+			spinner.stop();
 			error(`Login failed: ${body.error ?? "unknown error"}`);
 			process.exit(1);
 		}
@@ -94,10 +101,17 @@ export async function runLoginCommand(opts: { serverUrl?: string } = {}) {
 			created_at: new Date().toISOString(),
 		});
 
+		spinner.stopAndPersist({ symbol: chalk.green(sym.success), text: "Authorized" });
+		blank();
+		box("Logged in", [
+			{ label: "Instance", value: serverUrl },
+			{ label: "Account", value: admin.email },
+		]);
 		success(`Logged in as ${chalk.cyan(admin.email)}`);
 		return;
 	}
 
+	spinner.stop();
 	error("Login timed out. Please try again.");
 	process.exit(1);
 }

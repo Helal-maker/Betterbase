@@ -1,6 +1,7 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { generateDrizzleConfig } from "@betterbase/core/config";
+import chalk from "chalk";
 import { z } from "zod";
 import * as logger from "../utils/logger";
 import * as prompts from "../utils/prompts";
@@ -1299,6 +1300,9 @@ export default server;
  */
 export async function runInitCommand(rawOptions: InitCommandOptions): Promise<void> {
 	const options = initOptionsSchema.parse(rawOptions);
+	logger.blank();
+	console.log(chalk.bold("  Create a new Betterbase project"));
+	logger.blank();
 
 	// Default: IaC mode (no flag passed means iac = true)
 	// --no-iac flag means iac = false (legacy interactive mode)
@@ -1316,20 +1320,23 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 			// Copy templates/iac/ to target directory
 			await copyIaCTemplate(projectPath);
 
-			logger.success("IaC project created successfully!");
-			console.log("");
-			console.log(`📁 Project: ${projectName}`);
-			console.log("");
-			console.log("Next steps:");
-			console.log(`  cd ${projectName}`);
-			console.log("  bun install");
-			console.log("  bb dev");
-			console.log("");
-			console.log("Your schema is in betterbase/schema.ts");
-			console.log("Your functions are in betterbase/queries/ and betterbase/mutations/");
-			console.log("");
-			console.log("The project uses infrastructure-as-code with betterbase/ functions.");
-			console.log("Define your schema in betterbase/schema.ts - migrations are auto-generated.");
+			logger.blank();
+			console.log(chalk.bold(chalk.white(`  ✦ ${projectName}`)) + chalk.dim(" initialized"));
+			logger.blank();
+			logger.section("Created");
+			logger.tree([
+				"betterbase.config.ts",
+				"betterbase/schema.ts",
+				"src/index.ts",
+				"betterbase/queries/todos.ts",
+				"betterbase/mutations/todos.ts",
+				chalk.dim("... and more"),
+			]);
+			logger.section("Next steps");
+			[`cd ${chalk.cyan(projectName)}`, "bun install", "bb dev"].forEach((item, idx) => {
+				console.log(`  ${chalk.dim(`${idx + 1}.`)} ${item}`);
+			});
+			logger.blank();
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);
 			logger.error(`Failed to create IaC project: ${message}`);
@@ -1470,17 +1477,28 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 			await initializeGitRepository(projectPath);
 		}
 
-		logger.success("BetterBase project created successfully!");
-		console.log("");
-		console.log(`📁 Project: ${projectName}`);
-		console.log(`🗄️  Database: ${getDatabaseLabel(provider)}`);
-		console.log(`🔐 Auth: ${authEnabled ? "Enabled" : "Disabled"}`);
-		console.log("");
-		console.log("Next steps:");
-		console.log(`  cd ${projectName}`);
-		console.log("  bun run dev");
-		console.log("");
-		console.log("Your backend is running at http://localhost:3000");
+		logger.blank();
+		console.log(chalk.bold(chalk.white(`  ✦ ${projectName}`)) + chalk.dim(" initialized"));
+		logger.blank();
+		logger.section("Created");
+		logger.tree([
+			"betterbase.config.ts",
+			"drizzle.config.ts",
+			"src/index.ts",
+			"src/db/schema.ts",
+			"src/auth/index.ts",
+			chalk.dim("... and more"),
+		]);
+		logger.section("Next steps");
+		[
+			`cd ${chalk.cyan(projectName)}`,
+			"bun install",
+			`${chalk.dim("# add your database URL to")} .env`,
+			"bb dev",
+		].forEach((item, idx) => {
+			console.log(`  ${chalk.dim(`${idx + 1}.`)} ${item}`);
+		});
+		logger.blank();
 	} catch (error) {
 		if (createdProjectDir) {
 			try {

@@ -1,4 +1,5 @@
 import { Command, CommanderError } from "commander";
+import chalk from "chalk";
 import packageJson from "../package.json";
 import { runAuthAddProviderCommand, runAuthSetupCommand } from "./commands/auth";
 import { runBranchCommand } from "./commands/branch";
@@ -58,13 +59,61 @@ async function checkAuthHook(): Promise<void> {
  */
 export function createProgram(): Command {
 	const program = new Command();
+	const isDebug = process.argv.includes("--debug");
 
 	program
 		.name("bb")
 		.description("BetterBase CLI")
 		.version(packageJson.version, "-v, --version", "display the CLI version")
+		.option("--debug", "Show full error stack traces")
 		.exitOverride()
 		.hook("preAction", checkAuthHook);
+
+	program.configureOutput({
+		writeErr: (str) => {
+			logger.error(str.replace(/^error: /i, "").trim());
+		},
+	});
+	program.configureHelp({
+		sortSubcommands: true,
+		helpWidth: 80,
+		subcommandTerm: (cmd) => chalk.cyan(cmd.name()),
+		optionTerm: (opt) => chalk.yellow(opt.flags),
+	});
+	program.addHelpText(
+		"before",
+		`\n${chalk.bold("  bb")} ${chalk.dim("— Betterbase CLI")}\n\n  ${chalk.dim("Manage projects, schema, functions, and deployments.")}\n`,
+	);
+	program.addHelpText(
+		"after",
+		`\n  ${chalk.dim("Examples:")}\n    ${chalk.dim("$")} bb init my-app\n    ${chalk.dim("$")} bb dev\n    ${chalk.dim("$")} bb iac sync\n    ${chalk.dim("$")} bb login --url http://localhost:3001\n\n  ${chalk.dim("Docs:")} ${chalk.cyan("https://docs.betterbase.io/cli")}\n`,
+	);
+
+	const getErrorHint = (err: unknown): string | undefined => {
+		const msg = err instanceof Error ? err.message : String(err);
+		if (msg.includes("ENOENT"))
+			return "File not found — check that you're in a Betterbase project directory";
+		if (msg.includes("ECONNREFUSED")) return "Could not reach server — is it running?";
+		if (msg.includes("Unauthorized")) return "Run `bb login` to authenticate";
+		if (msg.includes("MODULE_NOT_FOUND")) return "Run `bun install` to install dependencies";
+		if (msg.includes("DATABASE_URL")) return "Set DATABASE_URL in your .env file";
+		return undefined;
+	};
+	process.on("uncaughtException", (err) => {
+		logger.blank();
+		logger.error(err.message, getErrorHint(err));
+		if (isDebug) console.error(chalk.dim(err.stack));
+		logger.blank();
+		process.exit(1);
+	});
+	process.on("unhandledRejection", (reason: unknown) => {
+		const err = reason instanceof Error ? reason : new Error(String(reason));
+		logger.blank();
+		logger.error(err.message, getErrorHint(err));
+		if (isDebug) console.error(chalk.dim(err.stack));
+		logger.blank();
+		process.exit(1);
+	});
 
 	program
 		.command("init")

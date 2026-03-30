@@ -5,12 +5,14 @@ import { generateMigration } from "@betterbase/core/iac";
 import { generateDrizzleSchema } from "@betterbase/core/iac";
 import chalk from "chalk";
 import { mkdir, readdir, writeFile } from "fs/promises";
-import { error, info, success, warn } from "../../utils/logger";
+import { done, error, info, section, success, sym, warn } from "../../utils/logger";
+import { withSpinner } from "../../utils/spinner";
 
 export async function runIacSync(
 	projectRoot: string,
 	opts: { force?: boolean; silent?: boolean } = {},
 ) {
+	const startTime = Date.now();
 	const betterbaseDir = join(projectRoot, "betterbase");
 	const schemaFile = join(betterbaseDir, "schema.ts");
 	const prevFile = join(betterbaseDir, "_generated", "schema.json");
@@ -43,8 +45,26 @@ export async function runIacSync(
 	}
 
 	if (!opts.silent) {
+		section("IaC Sync");
 		info("Pending schema changes:");
 		console.log(formatDiff(diff));
+		const grouped = {
+			added: diff.changes.filter((c) => c.type.includes("add") || c.type.includes("create")),
+			modified: diff.changes.filter((c) => c.type.includes("alter") || c.type.includes("modify")),
+			removed: diff.changes.filter((c) => c.type.includes("drop") || c.type.includes("remove")),
+		};
+		if (grouped.added.length) {
+			console.log(`  ${chalk.green("+ Added tables:")}`);
+			grouped.added.forEach((c) => console.log(`    ${chalk.green(sym.bullet)} ${c.table}`));
+		}
+		if (grouped.modified.length) {
+			console.log(`  ${chalk.yellow("~ Modified tables:")}`);
+			grouped.modified.forEach((c) => console.log(`    ${chalk.yellow(sym.bullet)} ${c.table}`));
+		}
+		if (grouped.removed.length) {
+			console.log(`  ${chalk.red("- Removed tables:")}`);
+			grouped.removed.forEach((c) => console.log(`    ${chalk.red(sym.bullet)} ${c.table}`));
+		}
 	}
 
 	if (diff.hasDestructive && !opts.force) {
@@ -70,9 +90,19 @@ export async function runIacSync(
 	await writeFile(join(migrDir, migration.filename), migration.sql);
 	if (!opts.silent) info(`Migration written: ${migration.filename}`);
 
-	const drizzleCode = generateDrizzleSchema(current, "postgres");
-	await writeFile(drizzleOut, drizzleCode);
-	if (!opts.silent) info("Drizzle schema updated: src/db/schema.generated.ts");
+	if (opts.silent) {
+		const drizzleCode = generateDrizzleSchema(current, "postgres");
+		await writeFile(drizzleOut, drizzleCode);
+	} else {
+		await withSpinner(
+			"Generating Drizzle schema...",
+			async () => {
+				const drizzleCode = generateDrizzleSchema(current, "postgres");
+				await writeFile(drizzleOut, drizzleCode);
+			},
+			{ successText: "Schema generated" },
+		);
+	}
 
 	await mkdir(genDir, { recursive: true });
 	await saveSerializedSchema(current, prevFile);
@@ -80,5 +110,6 @@ export async function runIacSync(
 	if (!opts.silent) {
 		info("Run the migration runner to apply changes to the database.");
 		success("IaC sync complete.");
+		done(startTime, "Schema synced");
 	}
 }
