@@ -2,16 +2,6 @@
 
 > Last updated: 2026-03-30
 
-## Canonical Orientation Files
-
-Use these as the official project index set:
-
-1. `NOTICE.md` — backbone summary and navigation entry point.
-2. `README.md` — product overview and onboarding.
-3. `CODEBASE_MAP.md` — architecture and package map (this file).
-4. `docs/README.md` — complete documentation map.
-5. `docs/guides/provider-capabilities-and-rollout.md` — provider limitations and rollout strategy.
-
 ## What is BetterBase?
 
 AI-native Backend-as-a-Service platform built with Bun. Define your backend in TypeScript using the Convex-inspired IaC layer, or use traditional Drizzle + Hono patterns.
@@ -120,6 +110,7 @@ Scans `betterbase/` directory, registers functions
 | `generators/drizzle-schema-gen.ts` | Generate Drizzle schema |
 | `generators/migration-gen.ts` | Generate SQL migrations |
 | `generators/api-typegen.ts` | Generate TypeScript types |
+| `errors.ts` | Error classes with suggestions |
 | `cron.ts` | `cron()` scheduled functions |
 
 ---
@@ -133,13 +124,83 @@ React admin dashboard for self-hosted management.
 | Page | Route | Description |
 |------|-------|-------------|
 | Overview | `/` | Metrics, charts, activity |
+| Setup | `/setup` | Initial setup |
+| Login | `/login` | Authentication |
+| NotFound | `/*` | 404 page |
 | Projects | `/projects` | List all projects |
 | Project Detail | `/projects/:id` | Project settings |
 | Project Functions | `/projects/:id/functions` | Serverless functions |
+| Project IaC Functions | `/projects/:id/iac/functions` | IaC function management |
+| Project IaC Schema | `/projects/:id/iac/schema` | IaC schema view |
+| Project IaC Jobs | `/projects/:id/iac/jobs` | IaC job history |
+| Project IaC Query | `/projects/:id/iac/query` | IaC query diagnostics |
+| Project IaC Realtime | `/projects/:id/iac/realtime` | IaC realtime settings |
+| Project Database | `/projects/:id/database` | Database management |
+| Project Auth | `/projects/:id/auth` | Auth configuration |
+| Project Env | `/projects/:id/env` | Environment variables |
+| Project Webhooks | `/projects/:id/webhooks` | Project webhooks |
+| Project Users | `/projects/:id/users` | Project user management |
+| Project User | `/projects/:id/users/:userId` | User detail page |
+| Project Realtime | `/projects/:id/realtime` | Realtime settings |
+| Project Observability | `/projects/:id/observability` | Observability metrics |
 | Storage | `/storage` | Storage buckets |
+| Storage Bucket | `/storage/:bucketId` | Bucket details |
 | Logs | `/logs` | Request logs |
+| Function Invocations | `/functions` | Function invocation logs |
+| Webhook Deliveries | `/webhook-deliveries` | Webhook delivery logs |
+| Team | `/team` | Team management |
 | Audit | `/audit` | Audit log |
+| Observability | `/observability` | System observability |
 | Settings | `/settings` | Instance settings |
+| Settings SMTP | `/settings/smtp` | SMTP configuration |
+| Settings API Keys | `/settings/api-keys` | API key management |
+| Settings Notifications | `/settings/notifications` | Notification settings |
+| Settings Inngest | `/settings/inngest` | Inngest dashboard |
+
+### UI Components
+
+| Component | Description |
+|-----------|-------------|
+| label | Label component |
+| tooltip | Tooltip component |
+| scroll-area | Scroll area wrapper |
+| separator | Vertical/horizontal separator |
+| popover | Popover component |
+| switch | Toggle switch |
+| textarea | Text area input |
+| progress | Progress bar |
+| skeleton | Loading skeleton |
+| sheet | Slide-out panel |
+| badge | Status badge |
+| collapsible | Collapsible content |
+| Avatar | User avatar |
+| ConfirmDialog | Confirmation dialog |
+| LiveLogStream | Live log streaming |
+| CommandPalette | Command palette (Ctrl+K) |
+| ErrorBoundary | Error boundary wrapper |
+
+### Hooks
+
+| Hook | Description |
+|------|-------------|
+| useLogStream | Live log streaming hook |
+| useGlobalMetrics | Global metrics hook |
+| useTheme | Theme management hook |
+
+### Libs
+
+| File | Description |
+|------|-------------|
+| query-keys.ts | TanStack Query keys |
+| inngest-client.ts | Inngest client |
+| api.ts | API client |
+| utils.ts | Utility functions |
+
+### Layouts
+
+| Layout | Description |
+|--------|-------------|
+| AppLayout | Main application layout |
 
 ### Tech Stack
 
@@ -298,7 +359,8 @@ betterbase/
 │   │   │   │       ├── provider-prompts.ts     # Database provider selection
 │   │   │   │       ├── route-scanner.ts        # Hono route scanning
 │   │   │   │       ├── schema-scanner.ts       # Drizzle schema scanning
-│   │   │   │       └── scanner.ts              # Schema scanner core
+│   │   │   │   └── scanner.ts              # Schema scanner core
+│   │   │   │   │       └── spinner.ts              # Spinner utilities
 │   │   └── test/                  # CLI tests (30+ test files)
 │   │
 │   ├── client/                    # @betterbase/client - TypeScript SDK
@@ -647,6 +709,24 @@ Betterbase uses [Inngest](https://www.inngest.com/) for durable workflows and ba
 - **Module:** NodeNext
 - **Strict:** Enabled
 - **Module Resolution:** NodeNext
+
+---
+
+## Documentation (docs/)
+
+Comprehensive documentation for BetterBase.
+
+| Directory | Content |
+|-----------|---------|
+| `docs/getting-started/` | Installation, quick start, your first project |
+| `docs/features/` | Authentication, database, storage, realtime, webhooks, functions, RLS, GraphQL |
+| `docs/core/` | Core modules documentation (overview, config, providers, middleware, etc.) |
+| `docs/client/` | Client SDK documentation |
+| `docs/guides/` | Deployment, scaling, monitoring, production checklist |
+| `docs/iac/` | Infrastructure as Code documentation (schema, functions, client hooks, etc.) |
+| `docs/api-reference/` | REST API, GraphQL API, CLI commands, Client SDK reference |
+| `docs/templates/` | Template documentation |
+| `docs/examples/` | Example projects (ecommerce, blog, chat-app, todo-app) |
 
 ---
 
@@ -1324,6 +1404,15 @@ Realtime subscriptions module for WebSocket-based live data updates.
 
 ### IaC Client Modules (NEW - Phase 3)
 
+#### [`src/iac/provider.tsx`](packages/client/src/iac/provider.tsx)
+**Purpose:** React context provider for IaC functions.
+- **Exports:** `BetterBaseReactProvider`, `useIaC`
+- **Key Features:**
+  - Wraps React app with BetterBase context
+  - `useIaC()` hook returns query/mutation/action functions
+  - Configurable base URL and auth token
+  - Compatible with TanStack Query
+
 #### [`src/iac/hooks.ts`](packages/client/src/iac/hooks.ts)
 **Purpose:** React hooks for IaC functions (query, mutation).
 - **Exports:** `useQuery`, `useMutation`, `useAction`
@@ -1652,11 +1741,29 @@ The authentication template with full BetterAuth integration.
 - **Path:** `templates/auth/`
 - **Purpose:** Projects requiring authentication out of the box
 - **Includes:**
-  - Pre-configured BetterAuth setup
+  - Pre-configured BetterAuth setup (`src/auth/index.ts`, `src/auth/types.ts`)
   - Email/password authentication
   - Social OAuth providers (configurable)
   - Session management
-  - Auth middleware examples
+  - Auth middleware (`src/middleware/auth.ts`)
+  - Auth routes (`src/routes/auth.ts`, `src/routes/auth-example.ts`)
+  - Auth schema (`src/db/auth-schema.ts`, `src/db/schema.ts`)
+  - Drizzle adapter integration (`src/db/index.ts`)
+  - `betterbase.config.ts`, `drizzle.config.ts`, `package.json`
+
+### templates/iac
+
+The IaC project template with Convex-inspired patterns.
+
+- **Path:** `templates/iac/`
+- **Purpose:** Projects using the Infrastructure as Code approach
+- **Includes:**
+  - `betterbase/schema.ts` - Schema definition
+  - `betterbase/queries/` - Query functions
+  - `betterbase/mutations/` - Mutation functions
+  - `betterbase/actions/` - Action functions
+  - `betterbase/cron.ts` - Scheduled functions
+  - `betterbase.config.ts` - Project configuration
 
 ---
 
@@ -2086,18 +2193,16 @@ bun test
 
 All notable changes to BetterBase will be documented in this file.
 
-### Recent Updates (2026-03-29)
+### Recent Updates (2026-03-30)
 
 #### Documentation Updates
-- **CODEBASE_MAP.md**: Updated to reflect new IaC realtime modules, server routes, and client features
+- **CODEBASE_MAP.md**: Updated with new IaC error classes, generators, docs directory, and IaC template
 
 #### New Modules Added
-- **IaC Storage**: Added `iac/storage/storage-ctx.ts` for file operations in IaC functions
-- **IaC Realtime**: Added `iac/realtime/` subdirectory with table dependency inference, invalidation manager, and subscription tracker
-- **Server Routes**: Added project-scoped routes (database, functions, users, env, auth-config, webhooks, realtime, iac)
-- **Server Libs**: Added webhook-logger.ts, function-logger.ts, audit.ts
-- **CLI Utils**: Added api-client.ts, credentials.ts
-- **Client IaC**: Added paginated-query.ts for cursor-based pagination
+- **IaC Errors**: Added `iac/errors.ts` with error classes (IaCError, ValidationError, DatabaseError, AuthError, NotFoundError) and formatError utility
+- **IaC Generators**: Added code generators (drizzle-schema-gen.ts, migration-gen.ts, api-typegen.ts)
+- **Documentation**: Added docs/ directory with comprehensive documentation structure
+- **IaC Template**: Added `templates/iac/` for Convex-inspired IaC pattern projects
 
 #### Package Updates
 - **packages/cli**: 30+ test files, 9 utility modules
@@ -2110,3 +2215,4 @@ All notable changes to BetterBase will be documented in this file.
 ## License
 
 BetterBase is released under the MIT license.
+
