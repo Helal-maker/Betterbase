@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import chalk from "chalk";
 import * as logger from "../utils/logger";
 import { SchemaScanner, type TableInfo } from "../utils/schema-scanner";
+import { withSpinner } from "../utils/spinner";
 import { runGenerateGraphqlCommand } from "./graphql";
 
 function toSingular(name: string): string {
@@ -345,9 +347,16 @@ export async function runGenerateCrudCommand(
 	}
 
 	logger.info(`Generating CRUD for ${tableName}...`);
+	logger.section(`Generating CRUD for "${tableName}"`);
+	logger.tree([`src/routes/${tableName}.ts`, "Updated src/routes/index.ts"]);
+	logger.blank();
 
 	const scanner = new SchemaScanner(schemaPath);
-	const tables = scanner.scan();
+	const tables = await withSpinner(
+		"Scanning schema...",
+		async () => scanner.scan(),
+		{ successText: `Found table ${chalk.cyan(tableName)}` },
+	);
 	const table = tables[tableName];
 	if (!table) {
 		throw new Error(`Table "${tableName}" not found in schema.`);
@@ -360,16 +369,34 @@ export async function runGenerateCrudCommand(
 	mkdirSync(routesDir, { recursive: true });
 
 	const routePath = path.join(routesDir, `${tableName}.ts`);
-	writeFileSync(routePath, generateRouteFile(tableName, table));
+	await withSpinner(
+		"Writing route file...",
+		async () => {
+			writeFileSync(routePath, generateRouteFile(tableName, table));
+		},
+		{ successText: `Created ${chalk.cyan(`src/routes/${tableName}.ts`)}` },
+	);
 
-	updateMainRouter(resolvedRoot, tableName);
+	await withSpinner(
+		"Updating router index...",
+		async () => updateMainRouter(resolvedRoot, tableName),
+		{ successText: "Router updated" },
+	);
 
-	logger.success(`Generated ${routePath}`);
-	logger.info(`GET    /api/${tableName}`);
-	logger.info(`GET    /api/${tableName}/:id`);
-	logger.info(`POST   /api/${tableName}`);
-	logger.info(`PATCH  /api/${tableName}/:id`);
-	logger.info(`DELETE /api/${tableName}/:id`);
+	logger.blank();
+	logger.section("Generated endpoints");
+	[
+		["GET", `/api/${tableName}`, "List all (paginated)"],
+		["GET", `/api/${tableName}/:id`, "Get single"],
+		["POST", `/api/${tableName}`, "Create"],
+		["PATCH", `/api/${tableName}/:id`, "Update"],
+		["DELETE", `/api/${tableName}/:id`, "Delete"],
+	].forEach(([method, endpoint, desc]) => {
+		const color = { GET: chalk.green, POST: chalk.blue, PATCH: chalk.yellow, DELETE: chalk.red }[
+			method
+		]!;
+		console.log(`  ${color(method.padEnd(7))} ${chalk.white(endpoint.padEnd(28))} ${chalk.dim(desc)}`);
+	});
 
 	// Regenerate GraphQL schema after CRUD generation
 	logger.info("Regenerating GraphQL schema...");

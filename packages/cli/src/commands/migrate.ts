@@ -6,6 +6,7 @@ import { z } from "zod";
 import { DEFAULT_DB_PATH } from "../constants";
 import * as logger from "../utils/logger";
 import * as prompts from "../utils/prompts";
+import { withSpinner } from "../utils/spinner";
 import { runGenerateGraphqlCommand } from "./graphql";
 import {
 	calculateChecksum,
@@ -257,10 +258,14 @@ async function confirmDestructive(changes: MigrationChange[]): Promise<boolean> 
 	const destructive = changes.filter((c) => c.isDestructive);
 	if (destructive.length === 0) return true;
 
-	logger.warn("DESTRUCTIVE CHANGES DETECTED:");
+	logger.blank();
+	console.log(chalk.yellow(logger.sym.warn) + " " + chalk.yellow.bold("Destructive operations detected:"));
 	for (const change of destructive) {
-		console.log(`  - ${change.type}: ${change.table}${change.column ? `.${change.column}` : ""}`);
+		console.log(
+			`  ${chalk.red(logger.sym.bullet)} ${change.type}: ${change.table}${change.column ? `.${change.column}` : ""}`,
+		);
 	}
+	logger.blank();
 
 	const confirmation = await prompts.text({
 		message: 'Type "delete data" to confirm:',
@@ -435,10 +440,14 @@ async function collectChangesFromGenerate(): Promise<MigrationChange[]> {
 }
 
 export async function runMigrateCommand(rawOptions: MigrateCommandOptions): Promise<void> {
+	const startTime = Date.now();
 	const options = migrateOptionsSchema.parse(rawOptions);
 
-	logger.info("Generating migration files with drizzle-kit...");
-	const changes = await collectChangesFromGenerate();
+	const changes = await withSpinner(
+		"Generating migration files...",
+		async () => await collectChangesFromGenerate(),
+		{ successText: "Migration files generated" },
+	);
 	displayDiff(changes);
 
 	if (options.preview) {
@@ -464,9 +473,12 @@ export async function runMigrateCommand(rawOptions: MigrateCommandOptions): Prom
 		if (!confirmed) return;
 	}
 
-	logger.info("Applying migrations with drizzle-kit push...");
 	logger.info("drizzle/ files are for preview; running push will apply changes.");
-	const push = await runDrizzleKit(["push"]);
+	const push = await withSpinner(
+		"Applying migration changes...",
+		async () => await runDrizzleKit(["push"]),
+		{ successText: "Applied migration changes" },
+	);
 
 	if (!push.success) {
 		await restoreBackup(backup);
@@ -484,8 +496,7 @@ export async function runMigrateCommand(rawOptions: MigrateCommandOptions): Prom
 		throw new Error(`Migration push failed.\n${push.stderr || push.stdout}`);
 	}
 
-	logger.info("drizzle-kit push completed; changes applied.");
-	logger.success("Migration complete!");
+	logger.done(startTime, "Migration complete");
 
 	// Regenerate GraphQL schema after migration
 	// Use the directory where the migration was run (current working directory)

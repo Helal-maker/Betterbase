@@ -17,7 +17,9 @@ import {
 	getVercelLogs,
 	syncEnvToCloudflare,
 } from "@betterbase/core/functions";
+import chalk from "chalk";
 import * as logger from "../utils/logger";
+import { createSpinner, withSpinner } from "../utils/spinner";
 
 // Store running function processes for cleanup
 const runningFunctions: Map<string, ChildProcess> = new Map();
@@ -380,9 +382,18 @@ async function runFunctionDeploy(
 		return;
 	}
 
-	// First, build the function
-	console.log(`Building function "${name}" before deployment...`);
-	const buildResult = await bundleFunction(name, projectRoot);
+	const config = await readFunctionConfig(name, projectRoot);
+	const runtime = config?.runtime ?? "cloudflare-workers";
+	logger.section(`Deploying ${chalk.cyan(name)}`);
+	logger.keyValue("Target", runtime);
+	logger.keyValue("Function", name);
+	logger.blank();
+
+	const buildResult = await withSpinner(
+		"Bundling function...",
+		async () => await bundleFunction(name, projectRoot),
+		{ successText: `Bundled ${chalk.dim(`dist/${name}.js`)}` },
+	);
 
 	if (!buildResult.success) {
 		logger.error("Build failed:");
@@ -391,16 +402,11 @@ async function runFunctionDeploy(
 		}
 		return;
 	}
-
-	console.log(`Build successful (${(buildResult.size / 1024).toFixed(2)} KB)\n`);
-
-	// Get function config
-	const config = await readFunctionConfig(name, projectRoot);
-	const runtime = config?.runtime ?? "cloudflare-workers";
-
-	console.log(`Deploying to ${runtime}...`);
+	logger.info(`Bundle size: ${(buildResult.size / 1024).toFixed(2)} KB`);
 
 	let deployResult: DeployResult | undefined;
+	const spinner = createSpinner("Deploying to edge...").start();
+	spinner.text = `Deploying to ${runtime}...`;
 
 	if (runtime === "cloudflare-workers") {
 		deployResult = await deployToCloudflare(
@@ -419,15 +425,24 @@ async function runFunctionDeploy(
 	}
 
 	if (!deployResult.success) {
+		spinner.stop();
 		logger.error("Deployment failed:");
 		for (const log of deployResult.logs) {
 			console.log(`  ${log}`);
 		}
 		return;
 	}
+	spinner.stopAndPersist({
+		symbol: chalk.green(logger.sym.success),
+		text: `Deployed ${chalk.cyan(name)}`,
+	});
 
-	console.log("\nDeployment successful!");
-	console.log(`  URL: ${deployResult.url}`);
+	logger.blank();
+	logger.box("Deployment complete", [
+		{ label: "Function", value: name },
+		{ label: "Target", value: runtime },
+		{ label: "URL", value: deployResult.url ?? "pending" },
+	]);
 
 	// Handle env sync
 	if (syncEnv && config && config.env.length > 0) {

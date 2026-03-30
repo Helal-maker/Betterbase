@@ -2,7 +2,7 @@ import { existsSync } from "fs";
 import { join, relative } from "path";
 import chalk from "chalk";
 import { ContextGenerator } from "../utils/context-generator";
-import { error, info, success, warn } from "../utils/logger";
+import { blank, error, info, keyValue, sym, warn } from "../utils/logger";
 import { ProcessManager } from "./dev/process-manager";
 import { queryLog } from "./dev/query-log";
 import { DevWatcher } from "./dev/watcher";
@@ -13,8 +13,15 @@ export async function runDevCommand(projectRoot: string) {
 	const hasBetterBase = existsSync(join(projectRoot, "betterbase"));
 	const hasIaC = hasBetterBase;
 
-	// Print banner
-	console.log(chalk.bold.cyan("\n  BetterBase Dev\n"));
+	blank();
+	console.log(chalk.bold("  bb dev") + chalk.dim(" — watching for changes"));
+	blank();
+	keyValue("Project root", projectRoot);
+	keyValue("Server URL", "http://localhost:3000");
+	keyValue("Dashboard", "http://localhost:3000/admin");
+	blank();
+	console.log(chalk.dim("  Press Ctrl+C to stop"));
+	blank();
 	if (hasIaC) {
 		info("IaC layer detected — betterbase/ will be watched for schema and function changes.");
 	}
@@ -54,7 +61,9 @@ export async function runDevCommand(projectRoot: string) {
 
 		switch (event.kind) {
 			case "schema": {
-				info(`[iac] Schema changed: ${label}`);
+				console.log(
+					`  ${chalk.dim(new Date().toLocaleTimeString("en-US", { hour12: false }))} ${chalk.yellow("~")} ${chalk.dim(label)} ${chalk.dim("→ regenerating context")}`,
+				);
 				const result = await runIacSync(projectRoot, { force: false, silent: false }).catch(
 					(e: Error) => {
 						warn(`[iac] ${e.message}`);
@@ -94,9 +103,17 @@ export async function runDevCommand(projectRoot: string) {
 		}
 
 		// Regenerate context on every change
-		ctxGen.generate(projectRoot).catch((e: Error) => {
+		const startedAt = Date.now();
+		ctxGen.generate(projectRoot)
+			.then(() => {
+				const elapsed = Date.now() - startedAt;
+				console.log(
+					`  ${chalk.dim(new Date().toLocaleTimeString("en-US", { hour12: false }))} ${chalk.green(sym.success)} context updated ${chalk.dim(`(${elapsed}ms)`)}`,
+				);
+			})
+			.catch((e: Error) => {
 			warn(`Context regeneration failed: ${e.message}`);
-		});
+			});
 	});
 
 	watcher.start(projectRoot);
