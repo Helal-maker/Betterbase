@@ -29,3 +29,4 @@ export class UnauthorizedError extends BetterBaseError {
 		this.name = "UnauthorizedError";
 	}
 }
+ 

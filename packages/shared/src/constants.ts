@@ -6,3 +6,4 @@ export const CONFIG_FILE_NAME = "betterbase.config.ts";
 export const MIGRATIONS_DIR = "drizzle";
 export const FUNCTIONS_DIR = "src/functions";
 export const POLICIES_DIR = "src/db/policies";
+ 

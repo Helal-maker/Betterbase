@@ -74,3 +74,4 @@ export function formatBytes(bytes: number): string {
 
 	return `${Number.parseFloat((bytes / k ** index).toFixed(2))} ${units[index]}`;
 }
+ 

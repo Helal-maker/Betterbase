@@ -105,3 +105,4 @@ export function done(startMs: number, msg?: string): void {
 	const elapsed = ((Date.now() - startMs) / 1000).toFixed(2);
 	console.log(`\n${chalk.green(sym.success)} ${msg ?? "Done"} ${chalk.dim(`(${elapsed}s)`)}`);
 }
+ 

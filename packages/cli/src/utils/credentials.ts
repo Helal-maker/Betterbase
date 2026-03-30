@@ -42,3 +42,4 @@ export function getServerUrl(): string {
 	const creds = loadCredentials();
 	return creds?.server_url ?? "https://api.betterbase.io"; // Falls back to cloud
 }
+ 
