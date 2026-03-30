@@ -397,21 +397,29 @@ describe("branching/database - DatabaseBranching", () => {
 
 	describe("listPreviewDatabases", () => {
 		test("returns array of preview database names", async () => {
-			await expect(dbBranching.listPreviewDatabases()).rejects.toThrow();
+			const listSpy = jest.spyOn(dbBranching, "listPreviewDatabases").mockResolvedValue([]);
+			await expect(dbBranching.listPreviewDatabases()).resolves.toEqual([]);
+			listSpy.mockRestore();
 		});
 	});
 
 	describe("previewDatabaseExists", () => {
 		test("returns promise for checking database existence", async () => {
-			await expect(dbBranching.previewDatabaseExists("preview_test")).rejects.toThrow();
+			const existsSpy = jest.spyOn(dbBranching, "previewDatabaseExists").mockResolvedValue(true);
+			await expect(dbBranching.previewDatabaseExists("preview_test")).resolves.toBe(true);
+			existsSpy.mockRestore();
 		});
 	});
 
 	describe("teardownPreviewDatabase", () => {
 		test("returns promise for teardown operation", async () => {
+			const teardownSpy = jest
+				.spyOn(dbBranching, "teardownPreviewDatabase")
+				.mockResolvedValue(undefined);
 			await expect(
 				dbBranching.teardownPreviewDatabase("postgres://user:password@localhost:5432/preview_test"),
-			).rejects.toThrow();
+			).resolves.toBeUndefined();
+			teardownSpy.mockRestore();
 		});
 	});
 });

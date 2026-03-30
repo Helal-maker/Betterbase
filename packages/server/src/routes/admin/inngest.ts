@@ -229,12 +229,11 @@ inngestAdminRoutes.post("/functions/:id/test", async (c) => {
 					webhookName: "Test Webhook",
 					url: "https://example.com/webhook",
 					secret: null,
-					eventType: "TEST",
-					tableName: "users",
-					payload: { id: "test-123", example: "data", _test: true },
-					attempt: 1,
+						eventType: "TEST",
+						tableName: "users",
+						payload: { id: "test-123", example: "data", _test: true },
+					},
 				},
-			},
 			"evaluate-notification-rule": {
 				eventName: "betterbase/notification.evaluate",
 				payload: {

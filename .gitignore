@@ -16,6 +16,7 @@ dist
 .env
 .env.*
 !.env.example
+!.env.self-hosted.example
 
 *.log
 npm-debug.log

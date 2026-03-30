@@ -49,8 +49,8 @@ A comprehensive checklist for deploying BetterBase applications to production.
 ### Environment Variables
 
 - [ ] `DATABASE_URL` set
-- [ ] `AUTH_SECRET` set (minimum 32 characters)
-- [ ] `AUTH_URL` set to production URL
+- [ ] `BETTERBASE_JWT_SECRET` set (minimum 32 characters)
+- [ ] `BETTERBASE_PUBLIC_URL` set to production URL
 - [ ] `NODE_ENV` set to `production`
 - [ ] CORS origins configured
 
@@ -70,7 +70,7 @@ A comprehensive checklist for deploying BetterBase applications to production.
 
 ### Authentication
 
-- [ ] Strong AUTH_SECRET generated
+- [ ] Strong BETTERBASE_JWT_SECRET generated
 - [ ] Session expiry configured
 - [ ] MFA available for admin accounts
 
@@ -206,12 +206,12 @@ bb rls list
 ```bash
 # Required
 DATABASE_URL=postgresql://...
-AUTH_SECRET=your-32-char-secret-min
-AUTH_URL=https://...
+BETTERBASE_JWT_SECRET=your-32-char-secret-min
+BETTERBASE_PUBLIC_URL=https://...
 
 # Optional
 NODE_ENV=production
-CORS_ORIGIN=https://your-domain.com
+CORS_ORIGINS=https://your-domain.com
 STORAGE_PROVIDER=s3
 ```
 
