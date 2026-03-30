@@ -27,3 +27,4 @@ export function SetupGuard({ children }: { children: React.ReactNode }) {
 	if (checking) return null;
 	return <>{children}</>;
 }
+ 

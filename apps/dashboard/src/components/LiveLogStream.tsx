@@ -164,3 +164,4 @@ export function LiveLogStream({ projectId, maxRows = 200, autoScroll = true }: L
 		</div>
 	);
 }
+ 

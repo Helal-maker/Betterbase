@@ -52,3 +52,4 @@ export function StatCard({ label, value, icon: Icon, trend, color = "default" }:
 		</div>
 	);
 }
+ 

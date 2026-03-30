@@ -20,3 +20,4 @@ export function Avatar({ email, size = 32 }: AvatarProps) {
 		</div>
 	);
 }
+ 

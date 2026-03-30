@@ -14,3 +14,4 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 	if (!getToken()) return null;
 	return <>{children}</>;
 }
+ 
