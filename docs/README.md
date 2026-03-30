@@ -35,7 +35,8 @@ The documentation is organized into logical sections for easy navigation:
 │   ├── production-checklist.md
 │   ├── monitoring.md
 │   ├── scaling.md
-│   └── security-best-practices.md
+│   ├── security-best-practices.md
+│   └── provider-capabilities-and-rollout.md
 ├── api-reference/             # API documentation
 │   ├── client-sdk.md
 │   ├── cli-commands.md
@@ -101,6 +102,7 @@ Development guides for production:
 - [Monitoring](./guides/monitoring.md) - Set up logging and metrics
 - [Scaling](./guides/scaling.md) - Scale your application
 - [Security Best Practices](./guides/security-best-practices.md) - Security hardening
+- [Provider Capabilities & Rollout](./guides/provider-capabilities-and-rollout.md) - Provider limitations and implementation plan
 
 ## API Reference
 
