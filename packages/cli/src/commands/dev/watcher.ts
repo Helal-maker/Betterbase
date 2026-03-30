@@ -87,3 +87,4 @@ export class DevWatcher {
 		this._debounce.set(key, setTimeout(fn, this._debounceMs));
 	}
 }
+

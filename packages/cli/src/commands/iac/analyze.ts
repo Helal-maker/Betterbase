@@ -124,3 +124,4 @@ function printTable(results: QueryAnalysis[]) {
 		`\nTotal: ${total} | High: ${high} | Medium: ${medium} | Low: ${total - high - medium}\n`,
 	);
 }
+

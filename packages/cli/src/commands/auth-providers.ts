@@ -194,3 +194,4 @@ export function getProviderTemplate(name: string): ProviderTemplate | null {
 export function getAvailableProviders(): string[] {
 	return Object.keys(PROVIDER_TEMPLATES);
 }
+

@@ -1518,3 +1518,4 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 		throw error;
 	}
 }
+

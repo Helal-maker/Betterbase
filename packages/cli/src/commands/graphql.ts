@@ -456,3 +456,4 @@ function toPascalCase(str: string): string {
 		.replace(/[-_](.)/g, (_match, c) => c.toUpperCase())
 		.replace(/^(.)/, (_match, c) => c.toUpperCase());
 }
+

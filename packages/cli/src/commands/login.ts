@@ -134,3 +134,4 @@ export async function isAuthenticated(): Promise<boolean> {
 	const creds = await getCredentials();
 	return creds !== null;
 }
+

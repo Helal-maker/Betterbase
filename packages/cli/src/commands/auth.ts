@@ -465,3 +465,4 @@ export async function runAuthAddProviderCommand(
 	console.log("=".repeat(60));
 	console.log(`\nDocs: ${template.docsUrl}\n`);
 }
+

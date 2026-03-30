@@ -18,3 +18,4 @@ export async function runIacGenerate(projectRoot: string) {
 
 	success(`Generated betterbase/_generated/api.d.ts (${fns.length} functions)`);
 }
+

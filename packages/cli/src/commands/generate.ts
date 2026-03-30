@@ -406,3 +406,4 @@ export async function runGenerateCrudCommand(
 		logger.warn(`Failed to regenerate GraphQL: ${(err as Error).message}`);
 	}
 }
+

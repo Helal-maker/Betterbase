@@ -218,3 +218,4 @@ ${chalk.gray("Examples:")}
 `);
 	}
 }
+

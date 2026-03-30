@@ -112,3 +112,4 @@ export class QueryLog {
 
 // Singleton instance for global access
 export const queryLog = new QueryLog();
+

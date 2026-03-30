@@ -921,3 +921,4 @@ function formatBytes(bytes: number): string {
 
 	return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 }
+

@@ -160,3 +160,4 @@ CREATE INDEX IF NOT EXISTS idx_migrations_name
   ON _betterbase_migrations(name);
 `;
 }
+

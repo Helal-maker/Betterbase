@@ -384,3 +384,4 @@ export async function runBranchCommand(
 			process.exit(1);
 	}
 }
+

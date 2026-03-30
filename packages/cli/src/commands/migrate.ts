@@ -759,3 +759,4 @@ export async function runMigrateHistoryCommand(projectRoot: string): Promise<voi
 
 	console.log("");
 }
+

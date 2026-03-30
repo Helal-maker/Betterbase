@@ -140,3 +140,4 @@ export async function runDevCommand(projectRoot: string) {
 		await shutdown();
 	};
 }
+

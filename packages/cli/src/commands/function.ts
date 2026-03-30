@@ -511,3 +511,4 @@ export async function stopAllFunctions(): Promise<void> {
 
 	runningFunctions.clear();
 }
+

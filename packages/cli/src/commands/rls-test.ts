@@ -509,3 +509,4 @@ export async function runRLSTestCommand(projectRoot: string, tableName: string):
 		await sql.end();
 	}
 }
+
