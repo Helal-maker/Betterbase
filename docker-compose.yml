@@ -8,7 +8,7 @@
 #   docker compose up -d postgres minio inngest
 #   bun run dev
 # ============================================================================
-
+ 
 services:
   # PostgreSQL Database
   postgres:

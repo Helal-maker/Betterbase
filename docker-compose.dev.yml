@@ -8,7 +8,7 @@ version: "3.9"
 #   Then in a separate terminal: cd packages/server && bun run dev
 #
 # Inngest dashboard available at: http://localhost:8288
-
+ 
 services:
   inngest:
     image: inngest/inngest:v1.17.5

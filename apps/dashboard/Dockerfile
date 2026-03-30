@@ -7,7 +7,7 @@
 # Build:
 #   docker build -f apps/dashboard/Dockerfile -t betterbase-dashboard .
 # ============================================================================
-
+ 
 FROM oven/bun:1.3.9-debian AS builder
 
 WORKDIR /app/apps/dashboard

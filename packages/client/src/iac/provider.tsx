@@ -66,3 +66,4 @@ export function useBetterBaseContext(): BetterBaseContextValue {
 	if (!ctx) throw new Error("useBetterBaseContext must be used inside <BetterbaseProvider>");
 	return ctx;
 }
+ 

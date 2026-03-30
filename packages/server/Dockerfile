@@ -1,5 +1,5 @@
 FROM oven/bun:1.3.9-alpine AS builder
-
+ 
 WORKDIR /app
 
 RUN apk add --no-cache git

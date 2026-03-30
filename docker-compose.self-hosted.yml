@@ -18,7 +18,7 @@
 #   - Server: http://localhost:3000
 #   - Dashboard: http://localhost:3000 (root)
 # ============================================================================
-
+ 
 services:
   postgres:
     image: postgres:16-alpine

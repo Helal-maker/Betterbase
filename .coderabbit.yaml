@@ -2,7 +2,7 @@
 # BetterBase — CodeRabbit Configuration
 # Tuned for: Bun + Hono + Drizzle + BetterAuth + Turborepo monorepo
 # Solo dev + AI agent (Kilo Code) workflow
-
+ 
 language: "en-US"
 
 tone_instructions: "Be direct, dense, and technical. Skip encouragement. Flag real issues only. Prioritize security, correctness, and architectural consistency over style. When something is fine, say nothing."
