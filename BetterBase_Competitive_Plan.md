@@ -76,18 +76,22 @@ Feature-rich products lose if time-to-success is slow.
 ## 4) 30-day execution board
 
 ### Week 1
+
 - Finalize migration compatibility report format
 - Add CI rule enforcement and branch protections
 
 ### Week 2
+
 - Ship first version of Convex compatibility scanner
 - Publish benchmark methodology doc
 
 ### Week 3
+
 - Add `bb doctor` checks and actionable fixes
 - Add migration case study template
 
 ### Week 4
+
 - Publish 2 end-to-end migration examples
 - Publish proof matrix mapping claims -> tests/docs/benchmarks
 

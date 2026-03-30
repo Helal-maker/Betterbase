@@ -82,16 +82,14 @@ projectWebhookRoutes.post("/:webhookId/retry", async (c) => {
 
 	const failedDelivery = lastDelivery[0];
 	const payload = failedDelivery.payload ?? {};
-	const attempt = (failedDelivery.attempt_count ?? 0) + 1;
-
 	// Insert a pending delivery record FIRST so we can track it
 	// Then include the delivery ID in the event for the worker to update
 	const { rows: newDelivery } = await pool.query(
 		`INSERT INTO betterbase_meta.webhook_deliveries
        (webhook_id, event_type, payload, status, attempt_count)
-     VALUES ($1, 'RETRY', $2, 'pending', $3)
+     VALUES ($1, 'RETRY', $2, 'pending', 1)
      RETURNING id`,
-		[webhook.id, JSON.stringify(payload), attempt],
+		[webhook.id, JSON.stringify(payload)],
 	);
 
 	const deliveryId = newDelivery[0].id;
@@ -104,13 +102,12 @@ projectWebhookRoutes.post("/:webhookId/retry", async (c) => {
 			webhookName: webhook.name,
 			url: webhook.url,
 			secret: webhook.secret ?? null,
-			eventType: "RETRY",
-			tableName: webhook.table_name,
-			payload,
-			attempt,
-			deliveryId, // Include so worker can update the specific row
-		},
-	});
+				eventType: "RETRY",
+				tableName: webhook.table_name,
+				payload,
+				deliveryId, // Include so worker can update the specific row
+			},
+		});
 
 	return c.json({
 		success: true,
@@ -137,12 +134,11 @@ projectWebhookRoutes.post("/:webhookId/test", async (c) => {
 			webhookName: webhook.name,
 			url: webhook.url,
 			secret: webhook.secret ?? null,
-			eventType: "TEST",
-			tableName: webhook.table_name,
-			payload: { id: "test-123", example: "data", _test: true },
-			attempt: 1,
-		},
-	});
+				eventType: "TEST",
+				tableName: webhook.table_name,
+				payload: { id: "test-123", example: "data", _test: true },
+			},
+		});
 
 	return c.json({
 		success: true,

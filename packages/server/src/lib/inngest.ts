@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { EventSchemas, Inngest } from "inngest";
 
 // ─── CSV Escaping Helper ───────────────────────────────────────────────────────
@@ -25,22 +26,45 @@ const validateSchemaName = (slug: string): string => {
 	return `project_${slug}`;
 };
 
-const getNextDeliveryAttempt = async (
+const getPayloadHash = (payload: unknown): string => {
+	const payloadJson = typeof payload === "string" ? payload : JSON.stringify(payload);
+	return createHash("sha256").update(payloadJson).digest("hex");
+};
+
+const insertWebhookDelivery = async (
 	webhookId: string,
 	eventType: string,
 	payload: unknown,
-): Promise<number> => {
+	status: "success" | "failed",
+	responseCode: number | null,
+	responseBody: string | null,
+	durationMs: number | null,
+): Promise<void> => {
 	const { getPool } = await import("./db");
 	const pool = getPool();
-	const { rows } = await pool.query(
-		`SELECT COALESCE(MAX(attempt_count), 0) + 1 AS next_attempt
-		 FROM betterbase_meta.webhook_deliveries
-		 WHERE webhook_id = $1
-		   AND event_type = $2
-		   AND payload = $3::jsonb`,
-		[webhookId, eventType, JSON.stringify(payload)],
-	);
-	return Number(rows[0]?.next_attempt ?? 1);
+	const payloadJson = JSON.stringify(payload);
+	const payloadHash = getPayloadHash(payloadJson);
+	const lockKey = `${webhookId}:${eventType}:${payloadHash}`;
+
+	await pool.query("BEGIN");
+	try {
+		await pool.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKey]);
+		await pool.query(
+			`INSERT INTO betterbase_meta.webhook_deliveries
+	       (webhook_id, event_type, payload, payload_hash, status, response_code, response_body, duration_ms, delivered_at, attempt_count)
+	     SELECT $1, $2, $3::jsonb, $4, $5, $6, $7, $8, NOW(), COALESCE(MAX(attempt_count), 0) + 1
+	     FROM betterbase_meta.webhook_deliveries
+	     WHERE webhook_id = $1
+	       AND event_type = $2
+	       AND payload_hash = $4
+	       AND payload = $3::jsonb`,
+			[webhookId, eventType, payloadJson, payloadHash, status, responseCode, responseBody, durationMs],
+		);
+		await pool.query("COMMIT");
+	} catch (error) {
+		await pool.query("ROLLBACK");
+		throw error;
+	}
 };
 
 // ─── Event Schema ────────────────────────────────────────────────────────────
@@ -58,7 +82,6 @@ type Events = {
 			eventType: string;
 			tableName: string;
 			payload: unknown;
-			attempt: number;
 		};
 	};
 
@@ -154,19 +177,18 @@ export const deliverWebhook = inngest.createFunction(
 		// Step 2: Send the HTTP request with timeout
 		// step.run is a code-level transaction: retries automatically on throw,
 		// runs only once on success, state persisted between retries.
-			let deliveryResult:
+			const deliveryResult:
 				| {
 						httpStatus: number;
 						durationMs: number;
 						responseBody: string;
 				  }
-				| undefined;
-
-			try {
-				deliveryResult = await step.run("send-http-request", async () => {
-					const body = JSON.stringify({
-						id: crypto.randomUUID(),
-						webhook_id: webhookId,
+				= await (async () => {
+					try {
+						return await step.run("send-http-request", async () => {
+						const body = JSON.stringify({
+							id: crypto.randomUUID(),
+							webhook_id: webhookId,
 						table: tableName,
 						type: eventType,
 						record: payload,
@@ -225,43 +247,34 @@ export const deliverWebhook = inngest.createFunction(
 					} finally {
 						clearTimeout(timeoutId);
 					}
-				});
-			} catch (err: any) {
-				await step.run("log-failed-delivery", async () => {
-					const { getPool } = await import("./db");
-					const pool = getPool();
-					const attemptCount = await getNextDeliveryAttempt(webhookId, eventType, payload);
-
-					await pool.query(
-						`INSERT INTO betterbase_meta.webhook_deliveries
-	           (webhook_id, event_type, payload, status, response_body, delivered_at, attempt_count)
-	         VALUES ($1, $2, $3, 'failed', $4, NOW(), $5)`,
-						[webhookId, eventType, JSON.stringify(payload), String(err?.message ?? err), attemptCount],
-					);
-				});
-				throw err;
-			}
+						});
+					} catch (err: any) {
+						await step.run("log-failed-delivery", async () => {
+							await insertWebhookDelivery(
+								webhookId,
+								eventType,
+								payload,
+								"failed",
+								null,
+								String(err?.message ?? err),
+								null,
+							);
+						});
+						throw err;
+					}
+				})();
 
 		// Step 2: Persist the delivery record with response_body
 		// This step only runs after the HTTP request succeeds.
 			await step.run("log-successful-delivery", async () => {
-				const { getPool } = await import("./db");
-				const pool = getPool();
-				const attemptCount = await getNextDeliveryAttempt(webhookId, eventType, payload);
-
-				await pool.query(
-					`INSERT INTO betterbase_meta.webhook_deliveries
-	           (webhook_id, event_type, payload, status, response_code, response_body, duration_ms, delivered_at, attempt_count)
-	         VALUES ($1, $2, $3, 'success', $4, $5, $6, NOW(), $7)`,
-					[
-						webhookId,
-						eventType,
-						JSON.stringify(payload),
-						deliveryResult?.httpStatus ?? null,
-						deliveryResult?.responseBody ?? null,
-						deliveryResult?.durationMs ?? null,
-						attemptCount,
-					],
+				await insertWebhookDelivery(
+					webhookId,
+					eventType,
+					payload,
+					"success",
+					deliveryResult.httpStatus,
+					deliveryResult.responseBody,
+					deliveryResult.durationMs,
 				);
 			});
 

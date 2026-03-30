@@ -46,8 +46,7 @@ export async function runMigrateFromConvex(options: MigrateFromConvexOptions): P
 	const { inputPath, outputPath } = options;
 
 	if (!existsSync(inputPath) || !statSync(inputPath).isDirectory()) {
-		logger.error(`Input path is not a directory: ${inputPath}`);
-		return;
+		throw new Error(`Input path is not a directory: ${inputPath}`);
 	}
 
 	logger.info(`Migrating Convex project from ${inputPath}...`);

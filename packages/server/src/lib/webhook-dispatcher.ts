@@ -39,11 +39,10 @@ export async function dispatchWebhookEvents(
 				webhookName: webhook.name,
 				url: webhook.url,
 				secret: null, // Secret looked up at delivery time for security
-				eventType,
-				tableName,
-				payload: record,
-				attempt: 1,
-			},
-		})),
-	);
+					eventType,
+					tableName,
+					payload: record,
+				},
+			})),
+		);
 }

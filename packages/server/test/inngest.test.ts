@@ -100,12 +100,11 @@ describe("Inngest client", () => {
 					webhookName: "Test Webhook",
 					url: "https://example.com/webhook",
 					secret: "secret123",
-					eventType: "INSERT",
-					tableName: "users",
-					payload: { id: "1", name: "Test" },
-					attempt: 1,
-				},
-			};
+						eventType: "INSERT",
+						tableName: "users",
+						payload: { id: "1", name: "Test" },
+					},
+				};
 
 			await inngest.send([event]);
 
