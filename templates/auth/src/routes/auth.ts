@@ -65,13 +65,11 @@ authRoute.get("/magic-link/verify", async (c) => {
 		return c.json({ error: "Token is required" }, 400);
 	}
 
-	// TODO: Implement proper token verification using better-auth
-	// For now, simulate verification
-	if (token.startsWith("dev-token-")) {
-		// In dev mode, create a mock session
+	const isDev = process.env.NODE_ENV === "development";
+
+	if (isDev && token.startsWith("dev-token-")) {
 		const sessionId = crypto.randomUUID();
 
-		// Find or create user (in real implementation, this would be done by better-auth)
 		return c.json({
 			token: sessionId,
 			user: {

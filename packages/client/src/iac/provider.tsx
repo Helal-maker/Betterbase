@@ -33,7 +33,15 @@ export function BetterbaseProvider({
 		function connect() {
 			if (isCleaned) return;
 			setWsReady(false);
-			const wsUrl = `${config.url.replace(/^http/, "ws")}/betterbase/ws?project=${config.projectSlug ?? "default"}`;
+			const baseUrl = config.url.replace(/^http/, "ws");
+			const projectPart = `project=${config.projectSlug ?? "default"}`;
+			let wsUrl = `${baseUrl}/betterbase/ws?${projectPart}`;
+
+			const token = config.getToken?.();
+			if (token) {
+				wsUrl += `&token=${encodeURIComponent(token)}`;
+			}
+
 			const ws = new WebSocket(wsUrl);
 			wsRef.current = ws;
 
@@ -72,7 +80,7 @@ export function BetterbaseProvider({
 			if (timeoutId !== null) clearTimeout(timeoutId);
 			wsRef.current?.close();
 		};
-	}, [config.url, config.projectSlug]);
+	}, [config.url, config.projectSlug, config.getToken]);
 
 	return (
 		<BetterBaseContext.Provider

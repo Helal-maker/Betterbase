@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [main, develop]
 
+env:
+  BUN_VERSION: "1.3.10"
+
 jobs:
   test:
     name: Test
@@ -15,7 +18,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.3.10"
+          bun-version: ${{ env.BUN_VERSION }}
           cache: true
 
       - name: Install dependencies
@@ -37,7 +40,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.3.10"
+          bun-version: ${{ env.BUN_VERSION }}
           cache: true
 
       - name: Install dependencies
@@ -56,7 +59,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.3.10"
+          bun-version: ${{ env.BUN_VERSION }}
           cache: true
 
       - name: Install dependencies

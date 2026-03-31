@@ -141,17 +141,17 @@ export function getBunServeConfig() {
 		fetch: async (req: Request, server: any) => {
 			const url = new URL(req.url);
 			if (url.pathname === "/betterbase/ws") {
+				let token: string | null = null;
+
 				const authHeader = req.headers.get("Authorization");
-				if (!authHeader) {
-					return new Response(JSON.stringify({ error: "Authentication required" }), {
-						status: 401,
-						headers: { "Content-Type": "application/json" },
-					});
+				token = extractBearerToken(authHeader ?? "");
+
+				if (!token) {
+					token = url.searchParams.get("token");
 				}
 
-				const token = extractBearerToken(authHeader);
 				if (!token) {
-					return new Response(JSON.stringify({ error: "Invalid authorization header" }), {
+					return new Response(JSON.stringify({ error: "Authentication required" }), {
 						status: 401,
 						headers: { "Content-Type": "application/json" },
 					});

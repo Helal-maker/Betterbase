@@ -15,8 +15,33 @@ const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const RATE_LIMIT_MAX_ATTEMPTS = 5;
 
+function resolveClientIP(c: Context): string {
+	const realIP = c.req.header("X-Real-IP");
+	if (realIP) return realIP;
+
+	const forwardedFor = c.req.header("X-Forwarded-For");
+	if (forwardedFor) {
+		const parts = forwardedFor.split(",");
+		const firstIP = parts[0]?.trim();
+		if (firstIP) return firstIP;
+	}
+
+	return c.req.header("Host") ?? "unknown";
+}
+
+function cleanupExpiredEntries(): void {
+	const now = Date.now();
+	for (const [ip, entry] of loginAttempts.entries()) {
+		if (entry.resetAt <= now) {
+			loginAttempts.delete(ip);
+		}
+	}
+}
+
 function loginRateLimiter(c: Context): Response | null {
-	const ip = c.req.header("X-Real-IP") || "unknown";
+	cleanupExpiredEntries();
+
+	const ip = resolveClientIP(c);
 	const now = Date.now();
 	const entry = loginAttempts.get(ip);
 
@@ -29,6 +54,11 @@ function loginRateLimiter(c: Context): Response | null {
 		loginAttempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
 	}
 	return null;
+}
+
+function clearLoginAttempts(c: Context): void {
+	const ip = resolveClientIP(c);
+	loginAttempts.delete(ip);
 }
 
 // ─── Auth Routes ───────────────────────────────────────────────────────────
@@ -66,10 +96,22 @@ authRoutes.post(
 			return c.json({ error: "Invalid credentials" }, 401);
 		}
 
+		clearLoginAttempts(c);
+
 		const token = await signAdminToken(admin.id);
 		return c.json({ token, admin: { id: admin.id, email: admin.email } });
 	},
 );
+
+// GET /admin/auth/setup/check  — CSRF-exempt setup status check
+authRoutes.get("/setup/check", async (c) => {
+	const pool = getPool();
+	const { rows } = await pool.query(
+		"SELECT COUNT(*)::int as count FROM betterbase_meta.admin_users",
+	);
+	const hasAdmins = rows[0].count > 0;
+	return c.json({ setupComplete: hasAdmins });
+});
 
 // GET /admin/auth/me  (requires token)
 authRoutes.get("/me", async (c) => {

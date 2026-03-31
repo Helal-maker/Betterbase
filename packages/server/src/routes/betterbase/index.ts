@@ -11,6 +11,7 @@ import { z } from "zod";
 import { extractBearerToken, verifyAdminToken } from "../../lib/auth";
 import { getPool } from "../../lib/db";
 import { validateEnv } from "../../lib/env";
+import { validateSchemaName } from "../../lib/inngest";
 
 // Import WS handler for stats
 import { getWSStats } from "./ws";
@@ -53,7 +54,7 @@ betterbaseRouter.post("/:kind/*", async (c) => {
 	// Build DB context
 	const pool = getPool();
 	const projectSlug = c.req.header("X-Project-Slug") ?? "default";
-	const dbSchema = `project_${projectSlug}`;
+	const dbSchema = validateSchemaName(projectSlug);
 
 	try {
 		let result: unknown;
@@ -93,12 +94,17 @@ betterbaseRouter.post("/:kind/*", async (c) => {
 // Storage context builder
 function buildStorageCtx(pool: any, projectSlug: string): StorageCtx {
 	const env = validateEnv();
+
+	if (!env.STORAGE_ACCESS_KEY || !env.STORAGE_SECRET_KEY) {
+		throw new Error("Storage credentials not configured");
+	}
+
 	return new StorageCtx({
 		pool,
 		projectSlug,
 		endpoint: env.STORAGE_ENDPOINT ?? "http://minio:9000",
-		accessKey: env.STORAGE_ACCESS_KEY ?? "minioadmin",
-		secretKey: env.STORAGE_SECRET_KEY ?? "minioadmin",
+		accessKey: env.STORAGE_ACCESS_KEY,
+		secretKey: env.STORAGE_SECRET_KEY,
 		bucket: env.STORAGE_BUCKET ?? "betterbase",
 		publicBase: env.STORAGE_PUBLIC_BASE,
 	});
@@ -231,8 +237,9 @@ betterbaseRouter.post("/storage/generate-upload-url", async (c) => {
 
 	// Record the pending upload in the DB so getUrl() works after upload
 	const pool = getPool();
+	const validatedSchema = validateSchemaName(projectSlug);
 	await pool.query(
-		`INSERT INTO "project_${projectSlug}"._iac_storage
+		`INSERT INTO "${validatedSchema}"._iac_storage
        (storage_id, s3_key, bucket, content_type) VALUES ($1, $2, $3, $4)
      ON CONFLICT (storage_id) DO NOTHING`,
 		[

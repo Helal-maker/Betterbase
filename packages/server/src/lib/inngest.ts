@@ -18,7 +18,7 @@ const escapeCSVValue = (value: unknown): string => {
 };
 
 // Helper to validate schema name - prevents SQL injection
-const validateSchemaName = (slug: string): string => {
+export const validateSchemaName = (slug: string): string => {
 	// Only allow lowercase alphanumeric and underscores
 	if (!/^[a-z][a-z0-9_]*$/.test(slug)) {
 		throw new Error(`Invalid project slug: ${slug}`);
@@ -58,7 +58,16 @@ const insertWebhookDelivery = async (
 	       AND event_type = $2
 	       AND payload_hash = $4
 	       AND payload = $3::jsonb`,
-			[webhookId, eventType, payloadJson, payloadHash, status, responseCode, responseBody, durationMs],
+			[
+				webhookId,
+				eventType,
+				payloadJson,
+				payloadHash,
+				status,
+				responseCode,
+				responseBody,
+				durationMs,
+			],
 		);
 		await pool.query("COMMIT");
 	} catch (error) {
@@ -149,15 +158,15 @@ export const deliverWebhook = inngest.createFunction(
 	},
 	{ event: "betterbase/webhook.deliver" },
 	async ({ event, step }) => {
-			const {
-				webhookId,
-				webhookName,
-				url,
-				secret: eventSecret,
-				eventType,
-				tableName,
-				payload,
-			} = event.data;
+		const {
+			webhookId,
+			webhookName,
+			url,
+			secret: eventSecret,
+			eventType,
+			tableName,
+			payload,
+		} = event.data;
 
 		// Step 1: Resolve secret from database if not provided in event
 		const resolvedSecret = await step.run("resolve-secret", async () => {
@@ -177,18 +186,16 @@ export const deliverWebhook = inngest.createFunction(
 		// Step 2: Send the HTTP request with timeout
 		// step.run is a code-level transaction: retries automatically on throw,
 		// runs only once on success, state persisted between retries.
-			const deliveryResult:
-				| {
-						httpStatus: number;
-						durationMs: number;
-						responseBody: string;
-				  }
-				= await (async () => {
-					try {
-						return await step.run("send-http-request", async () => {
-						const body = JSON.stringify({
-							id: crypto.randomUUID(),
-							webhook_id: webhookId,
+		const deliveryResult: {
+			httpStatus: number;
+			durationMs: number;
+			responseBody: string;
+		} = await (async () => {
+			try {
+				return await step.run("send-http-request", async () => {
+					const body = JSON.stringify({
+						id: crypto.randomUUID(),
+						webhook_id: webhookId,
 						table: tableName,
 						type: eventType,
 						record: payload,
@@ -247,36 +254,36 @@ export const deliverWebhook = inngest.createFunction(
 					} finally {
 						clearTimeout(timeoutId);
 					}
-						});
-					} catch (err: any) {
-						await step.run("log-failed-delivery", async () => {
-							await insertWebhookDelivery(
-								webhookId,
-								eventType,
-								payload,
-								"failed",
-								null,
-								String(err?.message ?? err),
-								null,
-							);
-						});
-						throw err;
-					}
-				})();
+				});
+			} catch (err: any) {
+				await step.run("log-failed-delivery", async () => {
+					await insertWebhookDelivery(
+						webhookId,
+						eventType,
+						payload,
+						"failed",
+						null,
+						String(err?.message ?? err),
+						null,
+					);
+				});
+				throw err;
+			}
+		})();
 
 		// Step 2: Persist the delivery record with response_body
 		// This step only runs after the HTTP request succeeds.
-			await step.run("log-successful-delivery", async () => {
-				await insertWebhookDelivery(
-					webhookId,
-					eventType,
-					payload,
-					"success",
-					deliveryResult.httpStatus,
-					deliveryResult.responseBody,
-					deliveryResult.durationMs,
-				);
-			});
+		await step.run("log-successful-delivery", async () => {
+			await insertWebhookDelivery(
+				webhookId,
+				eventType,
+				payload,
+				"success",
+				deliveryResult.httpStatus,
+				deliveryResult.responseBody,
+				deliveryResult.durationMs,
+			);
+		});
 
 		return {
 			success: true,
