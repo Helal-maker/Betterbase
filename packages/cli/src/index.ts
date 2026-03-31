@@ -488,10 +488,9 @@ export function createProgram(): Command {
 		.option("--sync-env", "Sync environment variables from .env")
 		.argument("[project-root]", "project root directory", process.cwd())
 		.action(async (name: string, projectRootArg: string, options: { syncEnv?: boolean }) => {
-			await runFunctionCommand(
-				["deploy", name, options.syncEnv ? "--sync-env" : ""],
-				projectRootArg,
-			);
+			const args = ["deploy", name];
+			if (options.syncEnv) args.push("--sync-env");
+			await runFunctionCommand(args, projectRootArg);
 		});
 
 	// ── bb login — STAGED FOR ACTIVATION ────────────────────────────────────────
@@ -556,7 +555,7 @@ export function createProgram(): Command {
 	branch
 		.argument("[project-root]", "project root directory")
 		.option("-p, --project-root <path>", "project root directory", process.cwd())
-		.action(async (projectRootArg: string, options: { projectRoot?: string }) => {
+		.action(async (projectRootArg: string | undefined, options: { projectRoot?: string }) => {
 			const projectRoot = projectRootArg || options.projectRoot || process.cwd();
 			await runBranchCommand([], projectRoot);
 		});

@@ -45,9 +45,6 @@ export function BetterbaseProvider({
 			ws.onerror = (err) => {
 				if (isCleaned) return;
 				console.error("WebSocket error", err);
-				setWsReady(false);
-				timeoutId = setTimeout(connect, reconnectDelayMs);
-				reconnectDelayMs = Math.min(reconnectDelayMs * 2, maxReconnectDelayMs);
 			};
 			ws.onclose = () => {
 				if (isCleaned) return;
