@@ -15,7 +15,7 @@
 # ----------------------------------------------------------------------------
 # Stage 1: Base
 # ----------------------------------------------------------------------------
-FROM oven/bun:1.3.9-debian AS base
+FROM oven/bun:1.3.10-debian AS base
 
 LABEL maintainer="Betterbase Team"
 LABEL description="Betterbase Project - AI-Native Backend Platform"

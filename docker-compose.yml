@@ -38,6 +38,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-betterbase}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-betterbase_dev_password}
+      MINIO_DATA_DIR: /data
     ports:
       - "9000:9000"
       - "9001:9001"

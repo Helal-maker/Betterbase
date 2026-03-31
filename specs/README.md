@@ -591,7 +591,7 @@ All notable changes to this project will be documented in this section.
 
 ## License
 
-Betterbase is open source under the [MIT License](LICENSE).
+Betterbase is open source under the [MIT License](../LICENSE).
 
 ```
 MIT License
@@ -633,7 +633,7 @@ SOFTWARE.
 | Resource | Link |
 |----------|------|
 | **GitHub** | [GitHub](https://github.com/weroperking/Betterbase) |
-| **Contributing Guide** | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **Contributing Guide** | [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | **Good First Issues** | [Good First Issues](https://github.com/weroperking/Betterbase/labels/good-first-issue) |
 
 ---
@@ -642,6 +642,6 @@ SOFTWARE.
 
 **Built with ❤️ by Weroperking**
 
-[Website](#) • [Documentation](docs/README.md) • [Discord](https://discord.gg/R6Dm6Cgy2E) • [GitHub](https://github.com/weroperking/Betterbase) • [Twitter](#)
+Website • [Documentation](../docs/README.md) • [Discord](https://discord.gg/R6Dm6Cgy2E) • [GitHub](https://github.com/weroperking/Betterbase) • Twitter
 
 </div>

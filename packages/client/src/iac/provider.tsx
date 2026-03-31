@@ -32,6 +32,7 @@ export function BetterbaseProvider({
 
 		function connect() {
 			if (isCleaned) return;
+			setWsReady(false);
 			const wsUrl = `${config.url.replace(/^http/, "ws")}/betterbase/ws?project=${config.projectSlug ?? "default"}`;
 			const ws = new WebSocket(wsUrl);
 			wsRef.current = ws;
@@ -48,7 +49,7 @@ export function BetterbaseProvider({
 			};
 			ws.onclose = () => {
 				if (isCleaned) return;
-				setWsReady(false);
+				wsRef.current = null;
 				timeoutId = setTimeout(connect, reconnectDelayMs);
 				reconnectDelayMs = Math.min(reconnectDelayMs * 2, maxReconnectDelayMs);
 			};
@@ -67,6 +68,7 @@ export function BetterbaseProvider({
 
 		return () => {
 			isCleaned = true;
+			setWsReady(false);
 			if (timeoutId !== null) clearTimeout(timeoutId);
 			wsRef.current?.close();
 		};
