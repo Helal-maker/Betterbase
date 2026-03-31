@@ -54,13 +54,9 @@ RUN bun install --frozen-lockfile
 # ----------------------------------------------------------------------------
 # Stage 3: Builder
 # ----------------------------------------------------------------------------
-FROM base AS builder
+FROM deps AS builder
 
 WORKDIR /app
-
-# Copy lockfile and install all dependencies
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
