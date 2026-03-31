@@ -19,6 +19,7 @@
 		"@hono/zod-validator": "^0.4.0",
 		"bcryptjs": "^2.4.3",
 		"hono": "^4.0.0",
+		"hono-rate-limit": "^1.0.2",
 		"inngest": "^3.0.0",
 		"jose": "^5.0.0",
 		"nanoid": "^5.0.0",

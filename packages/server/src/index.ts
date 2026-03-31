@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { serve } from "inngest/hono";
+import { csrfMiddleware } from "./lib/csrf";
 import { getPool } from "./lib/db";
 import { validateEnv } from "./lib/env";
 import { allInngestFunctions, inngest } from "./lib/inngest";
@@ -54,10 +55,12 @@ app.use(
 	cors({
 		origin: env.CORS_ORIGINS.split(","),
 		credentials: true,
-		allowHeaders: ["Content-Type", "Authorization"],
+		allowHeaders: ["Content-Type", "Authorization", "x-csrf-token"],
 		allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
 	}),
 );
+
+app.use("*", csrfMiddleware);
 
 // Health check — used by Docker HEALTHCHECK
 app.get("/health", (c) => c.json({ status: "ok", timestamp: new Date().toISOString() }));

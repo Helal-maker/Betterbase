@@ -4,7 +4,8 @@ import type { Pool } from "pg";
 
 const getSecret = () => new TextEncoder().encode(process.env.BETTERBASE_JWT_SECRET!);
 
-const TOKEN_EXPIRY = "30d";
+// 7 days - reduced from 30d for better security. Consider refresh tokens for longer sessions.
+const TOKEN_EXPIRY = "7d";
 const BCRYPT_ROUNDS = 12;
 
 // --- Password ---

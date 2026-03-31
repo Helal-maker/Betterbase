@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { z } from "zod";
 import {
 	extractBearerToken,
@@ -9,6 +10,28 @@ import {
 } from "../../lib/auth";
 import { getPool } from "../../lib/db";
 
+// ─── Simple in-memory rate limiter ─────────────────────────────────────────
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX_ATTEMPTS = 5;
+
+function loginRateLimiter(c: Context): Response | null {
+	const ip = c.req.header("X-Real-IP") || "unknown";
+	const now = Date.now();
+	const entry = loginAttempts.get(ip);
+
+	if (entry && entry.resetAt > now) {
+		if (entry.count >= RATE_LIMIT_MAX_ATTEMPTS) {
+			return c.json({ error: "Too many login attempts. Please try again in 15 minutes." }, 429);
+		}
+		entry.count++;
+	} else {
+		loginAttempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+	}
+	return null;
+}
+
+// ─── Auth Routes ───────────────────────────────────────────────────────────
 export const authRoutes = new Hono();
 
 // POST /admin/auth/login
@@ -22,6 +45,10 @@ authRoutes.post(
 		}),
 	),
 	async (c) => {
+		// Rate limit check
+		const rateLimitResponse = loginRateLimiter(c);
+		if (rateLimitResponse) return rateLimitResponse;
+
 		const { email, password } = c.req.valid("json");
 		const pool = getPool();
 

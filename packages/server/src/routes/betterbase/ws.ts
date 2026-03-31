@@ -5,6 +5,7 @@ import {
 	subscriptionTracker,
 } from "@betterbase/core";
 import { nanoid } from "nanoid";
+import { extractBearerToken, verifyAdminToken } from "../../lib/auth";
 
 const HEARTBEAT_INTERVAL_MS = 15_000; // ping every 15s
 const HEARTBEAT_TIMEOUT_MS = 30_000; // disconnect after 30s without pong
@@ -137,9 +138,33 @@ export function getWSStats() {
 /** Mount in Bun.serve() options */
 export function getBunServeConfig() {
 	return {
-		fetch(req: Request, server: any) {
+		fetch: async (req: Request, server: any) => {
 			const url = new URL(req.url);
 			if (url.pathname === "/betterbase/ws") {
+				const authHeader = req.headers.get("Authorization");
+				if (!authHeader) {
+					return new Response(JSON.stringify({ error: "Authentication required" }), {
+						status: 401,
+						headers: { "Content-Type": "application/json" },
+					});
+				}
+
+				const token = extractBearerToken(authHeader);
+				if (!token) {
+					return new Response(JSON.stringify({ error: "Invalid authorization header" }), {
+						status: 401,
+						headers: { "Content-Type": "application/json" },
+					});
+				}
+
+				const payload = await verifyAdminToken(token);
+				if (!payload) {
+					return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+						status: 401,
+						headers: { "Content-Type": "application/json" },
+					});
+				}
+
 				const projectSlug = url.searchParams.get("project") ?? "default";
 				const upgraded = server.upgrade(req, { data: { projectSlug } });
 				if (upgraded) return undefined;

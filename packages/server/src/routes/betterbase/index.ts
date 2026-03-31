@@ -181,15 +181,40 @@ betterbaseRouter.post("/storage/generate-upload-url", async (c) => {
 	const projectSlug = c.req.header("X-Project-Slug") ?? "default";
 	const storageId = `st_${nanoid(20)}`;
 	const ext = filename?.split(".").pop() ?? "";
-	const s3Key = `project_${projectSlug}/${storageId}${ext ? "." + ext : ""}`;
+
+	// Validate filename - prevent path traversal
+	if (filename && !/^[a-zA-Z0-9_.-]+$/.test(filename)) {
+		return c.json(
+			{ error: "Invalid filename: only alphanumeric, dash, underscore, and dot allowed" },
+			400,
+		);
+	}
+
+	// Validate extension
+	if (ext && !/^[a-zA-Z0-9]{1,10}$/.test(ext)) {
+		return c.json({ error: "Invalid file extension" }, 400);
+	}
+
+	// Validate contentType if provided
+	if (contentType && !/^[a-zA-Z0-9.-]+\/[a-zA-Z0-9.-]+$/.test(contentType)) {
+		return c.json({ error: "Invalid content type" }, 400);
+	}
+
 	const env = validateEnv();
+
+	// Validate credentials are set - fail fast instead of using defaults
+	if (!env.STORAGE_ACCESS_KEY || !env.STORAGE_SECRET_KEY) {
+		return c.json({ error: "Storage credentials not configured" }, 500);
+	}
+
+	const s3Key = `project_${projectSlug}/${storageId}${ext ? "." + ext : ""}`;
 
 	const s3 = new S3Client({
 		endpoint: env.STORAGE_ENDPOINT ?? "http://minio:9000",
 		region: "us-east-1",
 		credentials: {
-			accessKeyId: env.STORAGE_ACCESS_KEY ?? "minioadmin",
-			secretAccessKey: env.STORAGE_SECRET_KEY ?? "minioadmin",
+			accessKeyId: env.STORAGE_ACCESS_KEY,
+			secretAccessKey: env.STORAGE_SECRET_KEY,
 		},
 		forcePathStyle: true,
 	});

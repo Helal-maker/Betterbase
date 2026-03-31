@@ -29,6 +29,7 @@ export function evaluatePolicy(
 	userId: string | null,
 	operation: "select" | "insert" | "update" | "delete",
 	record?: Record<string, unknown>,
+	userRole?: string | null,
 ): boolean {
 	// Handle simple boolean policies
 	if (policyExpression === "true") {
@@ -59,10 +60,14 @@ export function evaluatePolicy(
 	const roleMatch = policyExpression.match(/auth\.role\(\)\s*=\s*'([^']+)'/);
 	if (roleMatch) {
 		const requiredRole = roleMatch[1];
-		// In a full implementation, we'd get the user's role from the session
-		// For now, we'll check if userId starts with the role prefix
-		// This is a simplified implementation
-		return false; // Deny by default if role check not implemented
+
+		// If userRole is not provided, deny by default
+		if (userRole === null || userRole === undefined) {
+			return false;
+		}
+
+		// Check if the user's role matches the required role
+		return userRole === requiredRole;
 	}
 
 	// Unknown policy format - deny by default for security
@@ -83,6 +88,7 @@ export function applyRLSSelect(
 	rows: Record<string, unknown>[],
 	policies: PolicyDefinition[],
 	userId: string | null,
+	userRole?: string | null,
 ): Record<string, unknown>[] {
 	// If no policies, return all rows (or none for non-authenticated if needed)
 	if (policies.length === 0) {
@@ -107,7 +113,7 @@ export function applyRLSSelect(
 		// If ANY policy allows access, the row passes
 		return selectPolicies.some((policy) => {
 			const policyExpr = policy.select || policy.using;
-			return evaluatePolicy(policyExpr!, userId, "select", row);
+			return evaluatePolicy(policyExpr!, userId, "select", row, userRole);
 		});
 	});
 }
@@ -124,6 +130,7 @@ export function applyRLSInsert(
 	policy: string | undefined,
 	userId: string | null,
 	record: Record<string, unknown>,
+	userRole?: string | null,
 ): void {
 	// If no policy, check authentication requirement
 	if (!policy) {
@@ -134,7 +141,7 @@ export function applyRLSInsert(
 	}
 
 	// Evaluate the policy
-	const allowed = evaluatePolicy(policy, userId, "insert", record);
+	const allowed = evaluatePolicy(policy, userId, "insert", record, userRole);
 
 	if (!allowed) {
 		throw new UnauthorizedError("Insert denied by RLS policy");
@@ -153,6 +160,7 @@ export function applyRLSUpdate(
 	policy: string | undefined,
 	userId: string | null,
 	record: Record<string, unknown>,
+	userRole?: string | null,
 ): void {
 	// If no policy, check authentication requirement
 	if (!policy) {
@@ -164,7 +172,7 @@ export function applyRLSUpdate(
 
 	// Evaluate the policy - use "using" or "withCheck" expression
 	const policyExpr = policy;
-	const allowed = evaluatePolicy(policyExpr, userId, "update", record);
+	const allowed = evaluatePolicy(policyExpr, userId, "update", record, userRole);
 
 	if (!allowed) {
 		throw new UnauthorizedError("Update denied by RLS policy");
@@ -183,6 +191,7 @@ export function applyRLSDelete(
 	policy: string | undefined,
 	userId: string | null,
 	record: Record<string, unknown>,
+	userRole?: string | null,
 ): void {
 	// If no policy, check authentication requirement
 	if (!policy) {
@@ -193,7 +202,7 @@ export function applyRLSDelete(
 	}
 
 	// Evaluate the policy
-	const allowed = evaluatePolicy(policy, userId, "delete", record);
+	const allowed = evaluatePolicy(policy, userId, "delete", record, userRole);
 
 	if (!allowed) {
 		throw new UnauthorizedError("Delete denied by RLS policy");
@@ -206,16 +215,22 @@ export function applyRLSDelete(
  *
  * @param policies - Array of policy definitions
  * @param getUserId - Function to get current user ID from request context
+ * @param getUserRole - Optional function to get current user role from request context
  * @returns RLS middleware functions
  */
-export function createRLSMiddleware(policies: PolicyDefinition[], getUserId: () => string | null) {
+export function createRLSMiddleware(
+	policies: PolicyDefinition[],
+	getUserId: () => string | null,
+	getUserRole?: () => string | null,
+) {
 	return {
 		/**
 		 * Apply RLS to SELECT operations
 		 */
 		select: (rows: Record<string, unknown>[]) => {
 			const userId = getUserId();
-			return applyRLSSelect(rows, policies, userId);
+			const userRole = getUserRole?.();
+			return applyRLSSelect(rows, policies, userId, userRole);
 		},
 
 		/**
@@ -223,8 +238,9 @@ export function createRLSMiddleware(policies: PolicyDefinition[], getUserId: () 
 		 */
 		insert: (record: Record<string, unknown>) => {
 			const userId = getUserId();
+			const userRole = getUserRole?.();
 			const policy = policies.find((p) => p.insert || p.withCheck);
-			applyRLSInsert(policy?.insert || policy?.withCheck, userId, record);
+			applyRLSInsert(policy?.insert || policy?.withCheck, userId, record, userRole);
 		},
 
 		/**
@@ -232,8 +248,9 @@ export function createRLSMiddleware(policies: PolicyDefinition[], getUserId: () 
 		 */
 		update: (record: Record<string, unknown>) => {
 			const userId = getUserId();
+			const userRole = getUserRole?.();
 			const policy = policies.find((p) => p.update || p.using);
-			applyRLSUpdate(policy?.update || policy?.using, userId, record);
+			applyRLSUpdate(policy?.update || policy?.using, userId, record, userRole);
 		},
 
 		/**
@@ -241,8 +258,9 @@ export function createRLSMiddleware(policies: PolicyDefinition[], getUserId: () 
 		 */
 		delete: (record: Record<string, unknown>) => {
 			const userId = getUserId();
+			const userRole = getUserRole?.();
 			const policy = policies.find((p) => p.delete);
-			applyRLSDelete(policy?.delete, userId, record);
+			applyRLSDelete(policy?.delete, userId, record, userRole);
 		},
 	};
 }

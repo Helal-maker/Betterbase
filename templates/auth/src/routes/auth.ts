@@ -131,8 +131,8 @@ authRoute.post("/otp/verify", async (c) => {
 	const { email, code } = result.data;
 
 	// TODO: Verify OTP from database in production
-	// For dev mode, accept any 6-digit code
-	if (process.env.NODE_ENV === "development" || code.length === 6) {
+	// TODO: Integrate with better-auth for production
+	if (process.env.NODE_ENV === "development") {
 		const sessionId = crypto.randomUUID();
 
 		return c.json({
@@ -193,8 +193,8 @@ authRoute.post("/mfa/verify", async (c) => {
 	const { code } = result.data;
 
 	// TODO: Verify TOTP code using better-auth
-	// Accept any 6-digit code in dev mode
-	if (process.env.NODE_ENV === "development" || code.length === 6) {
+	// TODO: Integrate with better-auth for production
+	if (process.env.NODE_ENV === "development") {
 		return c.json({ message: "MFA enabled successfully" });
 	}
 
@@ -218,7 +218,8 @@ authRoute.post("/mfa/disable", async (c) => {
 	const { code } = result.data;
 
 	// TODO: Verify and disable MFA using better-auth
-	if (process.env.NODE_ENV === "development" || code.length === 6) {
+	// TODO: Integrate with better-auth for production
+	if (process.env.NODE_ENV === "development") {
 		return c.json({ message: "MFA disabled successfully" });
 	}
 
@@ -242,8 +243,8 @@ authRoute.post("/mfa/challenge", async (c) => {
 	const { code } = result.data;
 
 	// TODO: Verify TOTP code and return session using better-auth
-	// Accept any 6-digit code in dev mode
-	if (process.env.NODE_ENV === "development" || code.length === 6) {
+	// TODO: Integrate with better-auth for production
+	if (process.env.NODE_ENV === "development") {
 		const sessionId = crypto.randomUUID();
 		return c.json({
 			token: sessionId,
@@ -318,8 +319,8 @@ authRoute.post("/phone/verify", async (c) => {
 	const { phone, code } = result.data;
 
 	// TODO: Verify code from database with expiry check (10 minutes)
-	// Accept any 6-digit code in dev mode
-	if (process.env.NODE_ENV === "development" || code.length === 6) {
+	// TODO: Integrate with better-auth for production
+	if (process.env.NODE_ENV === "development") {
 		const sessionId = crypto.randomUUID();
 
 		return c.json({
