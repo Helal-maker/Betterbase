@@ -16,6 +16,7 @@ const EnvSchema = z.object({
 	INNGEST_BASE_URL: z.string().url().optional(),
 	INNGEST_SIGNING_KEY: z.string().optional(),
 	INNGEST_EVENT_KEY: z.string().optional(),
+	PORT: z.string().default("3000"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -33,7 +33,8 @@ const nav = [
 	{ label: "Projects", href: "/projects", icon: FolderOpen },
 	{ label: "Storage", href: "/storage", icon: HardDrive },
 	{ label: "Logs", href: "/logs", icon: ScrollText },
-	{ label: "Observability", href: "/observability", icon: BarChart2 },
+	{ label: "Observability", href: "/observability", icon: Activity },
+	{ label: "Metrics", href: "/metrics", icon: BarChart2 },
 	{ label: "Audit Log", href: "/audit", icon: Shield },
 	{ label: "Team", href: "/team", icon: Users },
 	{

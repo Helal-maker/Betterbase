@@ -563,8 +563,15 @@ export function createProgram(): Command {
 		.command("login")
 		.description("Authenticate with a Betterbase instance")
 		.option("--url <url>", "Self-hosted Betterbase server URL", "https://api.betterbase.io")
+		.option("--email <email>", "Admin email (for headless/server login)")
+		.option("--password <password>", "Admin password (for headless/server login)")
 		.action(async (opts) => {
-			await runLoginCommand({ serverUrl: opts.url });
+			if (opts.email && opts.password) {
+				const { runApiKeyLogin } = await import("./commands/login");
+				await runApiKeyLogin({ serverUrl: opts.url, email: opts.email, password: opts.password });
+			} else {
+				await runLoginCommand({ serverUrl: opts.url });
+			}
 		});
 
 	program.command("logout").description("Sign out of Betterbase").action(runLogoutCommand);
