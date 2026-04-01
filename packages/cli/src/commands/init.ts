@@ -1310,13 +1310,52 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 
 	// IaC mode (default) - Convics-style infrastructure as code
 	if (useIaCMode) {
-		const projectNameInput = options.projectName ?? "my-betterbase-app";
-		const projectName = projectNameSchema.parse(projectNameInput);
+		// Use project name from CLI option if provided, otherwise prompt
+		let projectName: string;
+		if (options.projectName) {
+			projectName = projectNameSchema.parse(options.projectName);
+		} else {
+			const projectNameInput = await prompts.text({
+				message: "What is your project name?",
+				initial: "my-betterbase-app",
+			});
+			projectName = projectNameSchema.parse(projectNameInput);
+		}
 		const projectPath = path.resolve(process.cwd(), projectName);
 
 		logger.info(`Creating BetterBase IaC project: ${projectName}`);
 
 		try {
+			// Check if directory already exists
+			const existingDir = await Bun.file(projectPath).exists();
+			if (existingDir) {
+				const overwrite = await prompts.confirm({
+					message: `Directory "${projectName}" already exists. Overwrite?`,
+					default: false,
+				});
+				if (!overwrite) {
+					logger.info("Aborted. Choose a different project name.");
+					process.exit(0);
+				}
+				// Clean up existing directory
+				try {
+					await Bun.write(projectPath + "/.keep", "");
+					const files = await Bun.file(projectPath).ls();
+					await Promise.all(
+						files.map(async (f) => {
+							const fullPath = path.resolve(projectPath, f.name);
+							await Bun.write(fullPath, "");
+						}),
+					);
+					await Bun.file(projectPath)
+						.delete()
+						.catch(() => {});
+					await Bun.mkdir(projectPath, { recursive: true }).catch(() => {});
+				} catch (err) {
+					logger.error(`Failed to clean directory: ${err}`);
+				}
+			}
+
 			// Copy templates/iac/ to target directory
 			await copyIaCTemplate(projectPath);
 
@@ -1346,12 +1385,8 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 	}
 
 	// Legacy interactive mode (--no-iac)
-	logger.warn(
-		"Note: Interactive mode is deprecated. Use default BetterBase mode for new projects.",
-	);
-	logger.warn(
-		"     The BetterBase template uses betterbase/ functions + auto-migration instead of hand-written routes.",
-	);
+	logger.warn("Note: Interactive mode is deprecated. Use default IaC mode for new projects.");
+	logger.warn("The default mode uses betterbase/ directory with queries, mutations, and actions.");
 
 	const projectNameInput =
 		options.projectName ??

@@ -101,13 +101,13 @@ metricsRoutes.get("/top-endpoints", async (c) => {
 	const { rows } = await pool.query(
 		`
     SELECT path, method,
-           COUNT(*)::int AS count,
+           COUNT(*)::int AS requests,
            AVG(duration_ms)::int AS avg_ms,
            COUNT(*) FILTER (WHERE status >= 500)::int AS errors
     FROM betterbase_meta.request_logs
     WHERE created_at > NOW() - INTERVAL '${range}'
     GROUP BY path, method
-    ORDER BY count DESC
+    ORDER BY requests DESC
     LIMIT $1
   `,
 		[limit],

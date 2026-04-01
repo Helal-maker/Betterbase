@@ -5,7 +5,13 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
-export function formatDate(date: string | Date, opts?: Intl.DateTimeFormatOptions) {
+export function formatDate(
+	date: string | Date | null | undefined,
+	opts?: Intl.DateTimeFormatOptions,
+) {
+	if (!date) return "N/A";
+	const d = new Date(date);
+	if (isNaN(d.getTime())) return "N/A";
 	return new Intl.DateTimeFormat("en-US", {
 		year: "numeric",
 		month: "short",
@@ -13,7 +19,7 @@ export function formatDate(date: string | Date, opts?: Intl.DateTimeFormatOption
 		hour: "2-digit",
 		minute: "2-digit",
 		...opts,
-	}).format(new Date(date));
+	}).format(d);
 }
 
 export function formatRelative(date: string | Date): string {

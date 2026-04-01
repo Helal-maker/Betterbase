@@ -18,8 +18,10 @@ const SetupPage = lazy(() => import("@/pages/SetupPage"));
 const LoginPage = lazy(() => import("@/pages/LoginPage"));
 const OverviewPage = lazy(() => import("@/pages/OverviewPage"));
 const ObservabilityPage = lazy(() => import("@/pages/ObservabilityPage"));
+const MetricsPage = lazy(() => import("@/pages/MetricsPage"));
 const ProjectsPage = lazy(() => import("@/pages/projects/ProjectsPage"));
 const ProjectDetailPage = lazy(() => import("@/pages/projects/ProjectDetailPage"));
+const ProjectLayout = lazy(() => import("@/pages/projects/ProjectLayout"));
 const ProjectObservabilityPage = lazy(() => import("@/pages/projects/ProjectObservabilityPage"));
 const ProjectUsersPage = lazy(() => import("@/pages/projects/users/ProjectUsersPage"));
 const ProjectUserPage = lazy(() => import("@/pages/projects/users/ProjectUserPage"));
@@ -66,22 +68,29 @@ export const routes: RouteObject[] = [
 		children: [
 			{ index: true, element: wrap(OverviewPage) },
 			{ path: "observability", element: wrap(ObservabilityPage) },
+			{ path: "metrics", element: wrap(MetricsPage) },
 			{ path: "projects", element: wrap(ProjectsPage) },
-			{ path: "projects/:projectId", element: wrap(ProjectDetailPage) },
-			{ path: "projects/:projectId/observability", element: wrap(ProjectObservabilityPage) },
-			{ path: "projects/:projectId/users", element: wrap(ProjectUsersPage) },
-			{ path: "projects/:projectId/users/:userId", element: wrap(ProjectUserPage) },
-			{ path: "projects/:projectId/auth", element: wrap(ProjectAuthPage) },
-			{ path: "projects/:projectId/database", element: wrap(ProjectDatabasePage) },
-			{ path: "projects/:projectId/realtime", element: wrap(ProjectRealtimePage) },
-			{ path: "projects/:projectId/env", element: wrap(ProjectEnvPage) },
-			{ path: "projects/:projectId/webhooks", element: wrap(ProjectWebhooksPage) },
-			{ path: "projects/:projectId/functions", element: wrap(ProjectFunctionsPage) },
-			{ path: "projects/:projectId/iac/schema", element: wrap(ProjectIaCSchemaPage) },
-			{ path: "projects/:projectId/iac/functions", element: wrap(ProjectIaCFunctionsPage) },
-			{ path: "projects/:projectId/iac/jobs", element: wrap(ProjectIaCJobsPage) },
-			{ path: "projects/:projectId/iac/realtime", element: wrap(ProjectIaCRealtimePage) },
-			{ path: "projects/:projectId/iac/query", element: wrap(ProjectIaCQueryPage) },
+			{
+				path: "projects/:projectId",
+				element: wrap(ProjectLayout),
+				children: [
+					{ index: true, element: wrap(ProjectDetailPage) },
+					{ path: "observability", element: wrap(ProjectObservabilityPage) },
+					{ path: "users", element: wrap(ProjectUsersPage) },
+					{ path: "users/:userId", element: wrap(ProjectUserPage) },
+					{ path: "auth", element: wrap(ProjectAuthPage) },
+					{ path: "database", element: wrap(ProjectDatabasePage) },
+					{ path: "realtime", element: wrap(ProjectRealtimePage) },
+					{ path: "env", element: wrap(ProjectEnvPage) },
+					{ path: "webhooks", element: wrap(ProjectWebhooksPage) },
+					{ path: "functions", element: wrap(ProjectFunctionsPage) },
+					{ path: "iac/schema", element: wrap(ProjectIaCSchemaPage) },
+					{ path: "iac/functions", element: wrap(ProjectIaCFunctionsPage) },
+					{ path: "iac/jobs", element: wrap(ProjectIaCJobsPage) },
+					{ path: "iac/realtime", element: wrap(ProjectIaCRealtimePage) },
+					{ path: "iac/query", element: wrap(ProjectIaCQueryPage) },
+				],
+			},
 			{ path: "webhooks/:webhookId/deliveries", element: wrap(WebhookDeliveriesPage) },
 			{ path: "functions/:functionId/invocations", element: wrap(FunctionInvocationsPage) },
 			{ path: "storage", element: wrap(StoragePage) },

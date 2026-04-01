@@ -1,5 +1,3 @@
-version: "3.9"
-
 # Local development: runs Inngest dev server only.
 # BetterBase server runs outside Docker via: bun run dev
 #

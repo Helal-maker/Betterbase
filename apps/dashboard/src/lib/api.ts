@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 export class ApiError extends Error {
 	constructor(
@@ -94,3 +94,8 @@ export const api = {
 		return res.blob();
 	},
 };
+
+export async function checkSetup(): Promise<boolean> {
+	const res = await fetch(`${API_BASE}/admin/auth/setup-status`);
+	return res.status !== 410;
+}

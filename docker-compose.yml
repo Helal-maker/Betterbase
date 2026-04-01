@@ -31,13 +31,14 @@ services:
 
   # MinIO (S3-compatible storage)
   minio:
-    image: minio/minio:latest
+    image: bitnami/minio:2025.1.16
     container_name: betterbase-minio-local
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-betterbase}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-betterbase_dev_password}
+      MINIO_DATA_DIR: /data
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -51,7 +52,7 @@ services:
 
   # MinIO Init (Create bucket on startup)
   minio-init:
-    image: minio/mc:latest
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
     container_name: betterbase-minio-init-local
     depends_on:
       minio:

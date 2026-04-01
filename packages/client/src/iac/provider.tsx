@@ -25,30 +25,53 @@ export function BetterbaseProvider({
 	const [wsReady, setWsReady] = React.useState(false);
 
 	useEffect(() => {
-		const wsUrl = `${config.url.replace(/^http/, "ws")}/betterbase/ws?project=${config.projectSlug ?? "default"}`;
-		const ws = new WebSocket(wsUrl);
+		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		let isCleaned = false;
+		let reconnectDelayMs = 3_000;
+		const maxReconnectDelayMs = 30_000;
 
-		ws.onopen = () => {
-			setWsReady(true);
-		};
-		ws.onclose = () => {
+		function connect() {
+			if (isCleaned) return;
 			setWsReady(false);
-			// Reconnect after 3 seconds
-			setTimeout(() => {
-				wsRef.current = new WebSocket(wsUrl);
-			}, 3_000);
-		};
+			const wsUrl = `${config.url.replace(/^http/, "ws")}/betterbase/ws?project=${config.projectSlug ?? "default"}`;
+			const ws = new WebSocket(wsUrl);
+			wsRef.current = ws;
 
-		wsRef.current = ws;
+			ws.onopen = () => {
+				if (!isCleaned) {
+					setWsReady(true);
+					reconnectDelayMs = 3_000;
+				}
+			};
+			ws.onerror = (err) => {
+				if (isCleaned) return;
+				console.error("WebSocket error", err);
+			};
+			ws.onclose = () => {
+				if (isCleaned) return;
+				setWsReady(false);
+				wsRef.current = null;
+				timeoutId = setTimeout(connect, reconnectDelayMs);
+				reconnectDelayMs = Math.min(reconnectDelayMs * 2, maxReconnectDelayMs);
+			};
 
-		// Handle pings
-		ws.onmessage = (event) => {
-			const msg = JSON.parse(event.data);
-			if (msg.type === "ping") ws.send(JSON.stringify({ type: "pong" }));
-		};
+			ws.onmessage = (event) => {
+				try {
+					const msg = JSON.parse(event.data);
+					if (msg.type === "ping") ws.send(JSON.stringify({ type: "pong" }));
+				} catch {
+					return;
+				}
+			};
+		}
+
+		connect();
 
 		return () => {
-			ws.close();
+			isCleaned = true;
+			setWsReady(false);
+			if (timeoutId !== null) clearTimeout(timeoutId);
+			wsRef.current?.close();
 		};
 	}, [config.url, config.projectSlug]);
 

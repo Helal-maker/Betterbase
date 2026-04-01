@@ -1,5 +1,5 @@
-import { Command, CommanderError } from "commander";
 import chalk from "chalk";
+import { Command, CommanderError } from "commander";
 import packageJson from "../package.json";
 import { runAuthAddProviderCommand, runAuthSetupCommand } from "./commands/auth";
 import { runBranchCommand } from "./commands/branch";
@@ -29,7 +29,17 @@ import { runWebhookCommand } from "./commands/webhook";
 import * as logger from "./utils/logger";
 
 // Commands that don't require authentication
-const PUBLIC_COMMANDS = ["login", "logout", "version", "help", "init"];
+const PUBLIC_COMMANDS = [
+	"login",
+	"logout",
+	"version",
+	"help",
+	"init",
+	"--version",
+	"-V",
+	"--help",
+	"-h",
+];
 
 /**
  * Check if the user is authenticated before running a command.
@@ -120,7 +130,7 @@ export function createProgram(): Command {
 		.description("Initialize a BetterBase project with BetterBase template (betterbase/ functions)")
 		.option("--no-iac", "Use interactive mode instead of BetterBase template (for legacy projects)")
 		.argument("[project-name]", "project name")
-		.action(async (options: { iac?: boolean }, projectName?: string) => {
+		.action(async (projectName: string | undefined, options: { iac?: boolean }) => {
 			await runInitCommand({ projectName, ...options });
 		});
 
@@ -476,9 +486,10 @@ export function createProgram(): Command {
 		.argument("<name>", "function name")
 		.option("--sync-env", "Sync environment variables from .env")
 		.argument("[project-root]", "project root directory", process.cwd())
-		.action(async (name: string, options: { syncEnv?: boolean; projectRoot?: string }) => {
-			const projectRoot = options.projectRoot ?? process.cwd();
-			await runFunctionCommand(["deploy", name, options.syncEnv ? "--sync-env" : ""], projectRoot);
+		.action(async (name: string, projectRootArg: string, options: { syncEnv?: boolean }) => {
+			const args = ["deploy", name];
+			if (options.syncEnv) args.push("--sync-env");
+			await runFunctionCommand(args, projectRootArg);
 		});
 
 	// ── bb login — STAGED FOR ACTIVATION ────────────────────────────────────────
@@ -541,9 +552,8 @@ export function createProgram(): Command {
 		});
 
 	branch
-		.argument("[project-root]", "project root directory", process.cwd())
 		.option("-p, --project-root <path>", "project root directory", process.cwd())
-		.action(async (options) => {
+		.action(async (options: { projectRoot?: string }) => {
 			const projectRoot = options.projectRoot || process.cwd();
 			await runBranchCommand([], projectRoot);
 		});
@@ -552,8 +562,25 @@ export function createProgram(): Command {
 		.command("login")
 		.description("Authenticate with a Betterbase instance")
 		.option("--url <url>", "Self-hosted Betterbase server URL", "https://api.betterbase.io")
+		.option("--email <email>", "Admin email (for headless/server login)")
 		.action(async (opts) => {
-			await runLoginCommand({ serverUrl: opts.url });
+			if (opts.email) {
+				const { runApiKeyLogin } = await import("./commands/login");
+				let password = process.env.ADMIN_PASSWORD;
+				if (!password) {
+					const { default: prompts } = await import("prompts");
+					const result = await prompts({
+						type: "password",
+						name: "password",
+						message: "Admin password:",
+						validate: (p: string) => p.length >= 1,
+					});
+					password = result.password;
+				}
+				await runApiKeyLogin({ serverUrl: opts.url, email: opts.email, password });
+			} else {
+				await runLoginCommand({ serverUrl: opts.url });
+			}
 		});
 
 	program.command("logout").description("Sign out of Betterbase").action(runLogoutCommand);

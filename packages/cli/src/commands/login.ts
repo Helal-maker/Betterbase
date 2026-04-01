@@ -13,8 +13,14 @@ export function registerLoginCommand(program: Command) {
 		.command("login")
 		.description("Authenticate with a Betterbase instance")
 		.option("--url <url>", "Self-hosted Betterbase server URL", DEFAULT_SERVER_URL)
+		.option("--email <email>", "Admin email (for API key login)")
+		.option("--password <password>", "Admin password (for API key login)")
 		.action(async (opts) => {
-			await runLoginCommand({ serverUrl: opts.url });
+			if (opts.email && opts.password) {
+				await runApiKeyLogin({ serverUrl: opts.url, email: opts.email, password: opts.password });
+			} else {
+				await runLoginCommand({ serverUrl: opts.url });
+			}
 		});
 
 	program
@@ -49,7 +55,16 @@ export async function runLoginCommand(opts: { serverUrl?: string } = {}) {
 		userCode = data.user_code;
 		verificationUri = data.verification_uri;
 	} catch (err: any) {
-		error(`Could not reach server: ${err.message}`);
+		const msg = err.message || "";
+		if (msg.includes("connect") || msg.includes("ECONNREFUSED") || msg.includes("fetch")) {
+			error(`Could not connect to ${serverUrl}. Is the server running?`);
+			console.log(chalk.dim(`\n  To start a local server:`));
+			console.log(chalk.dim(`    cd packages/server && bun run dev`));
+			console.log(chalk.dim(`\n  Or specify a different URL:`));
+			console.log(chalk.dim(`    bb login --url http://localhost:3001`));
+		} else {
+			error(`Could not reach server: ${msg}`);
+		}
 		process.exit(1);
 	}
 
@@ -114,6 +129,56 @@ export async function runLoginCommand(opts: { serverUrl?: string } = {}) {
 	spinner.stop();
 	error("Login timed out. Please try again.");
 	process.exit(1);
+}
+
+export async function runApiKeyLogin(opts: {
+	serverUrl?: string;
+	email: string;
+	password: string;
+}): Promise<void> {
+	const serverUrl = (opts.serverUrl ?? DEFAULT_SERVER_URL).replace(/\/$/, "");
+
+	blank();
+	section("API Key Login");
+
+	try {
+		const res = await fetch(`${serverUrl}/admin/auth/login`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ email: opts.email, password: opts.password }),
+		});
+
+		if (!res.ok) {
+			const err = (await res.json()) as { error?: string };
+			error(`Login failed: ${err.error || res.statusText}`);
+			process.exit(1);
+		}
+
+		const { token, admin } = (await res.json()) as { token: string; admin: { email: string } };
+
+		saveCredentials({
+			token,
+			admin_email: admin.email,
+			server_url: serverUrl,
+			created_at: new Date().toISOString(),
+		});
+
+		box("Logged in", [
+			{ label: "Instance", value: serverUrl },
+			{ label: "Account", value: admin.email },
+		]);
+		success(`Logged in as ${chalk.cyan(admin.email)}`);
+	} catch (err: any) {
+		const msg = err.message || "";
+		if (msg.includes("connect") || msg.includes("ECONNREFUSED") || msg.includes("fetch")) {
+			error(`Could not connect to ${serverUrl}. Is the server running?`);
+			console.log(chalk.dim(`\n  To start a local server:`));
+			console.log(chalk.dim(`    cd packages/server && bun run dev`));
+		} else {
+			error(`Login failed: ${msg}`);
+		}
+		process.exit(1);
+	}
 }
 
 // Legacy exports for compatibility
