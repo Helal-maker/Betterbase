@@ -1310,13 +1310,30 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 
 	// IaC mode (default) - Convics-style infrastructure as code
 	if (useIaCMode) {
-		const projectNameInput = options.projectName ?? "my-betterbase-app";
+		// Prompt for project name with validation
+		const projectNameInput = await prompts.text({
+			message: "What is your project name?",
+			initial: "my-betterbase-app",
+		});
 		const projectName = projectNameSchema.parse(projectNameInput);
 		const projectPath = path.resolve(process.cwd(), projectName);
 
 		logger.info(`Creating BetterBase IaC project: ${projectName}`);
 
 		try {
+			// Check if directory already exists
+			const existingDir = await Bun.file(projectPath).exists();
+			if (existingDir) {
+				const overwrite = await prompts.confirm({
+					message: `Directory "${projectName}" already exists. Overwrite?`,
+					default: false,
+				});
+				if (!overwrite) {
+					logger.info("Aborted. Choose a different project name.");
+					process.exit(0);
+				}
+			}
+
 			// Copy templates/iac/ to target directory
 			await copyIaCTemplate(projectPath);
 
@@ -1346,12 +1363,8 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 	}
 
 	// Legacy interactive mode (--no-iac)
-	logger.warn(
-		"Note: Interactive mode is deprecated. Use default BetterBase mode for new projects.",
-	);
-	logger.warn(
-		"     The BetterBase template uses betterbase/ functions + auto-migration instead of hand-written routes.",
-	);
+	logger.warn("Note: Interactive mode is deprecated. Use default IaC mode for new projects.");
+	logger.warn("The default mode uses betterbase/ directory with queries, mutations, and actions.");
 
 	const projectNameInput =
 		options.projectName ??

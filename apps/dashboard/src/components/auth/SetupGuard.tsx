@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { checkSetup } from "../lib/api";
+import { checkSetup } from "../../lib/api";
 
 export function SetupGuard({ children }: { children: React.ReactNode }) {
 	const navigate = useNavigate();
@@ -8,7 +8,7 @@ export function SetupGuard({ children }: { children: React.ReactNode }) {
 
 	useEffect(() => {
 		checkSetup()
-			.then((isSetup) => {
+			.then((isSetup: boolean) => {
 				if (isSetup) {
 					navigate("/login", { replace: true });
 				}
