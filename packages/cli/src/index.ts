@@ -45,8 +45,8 @@ const PUBLIC_COMMANDS = [
 /**
  * Check if the user is authenticated before running a command.
  */
-async function checkAuthHook(): Promise<void> {
-	const commandName = process.argv[2];
+async function checkAuthHook(this: Command, actionCommand?: Command): Promise<void> {
+	const commandName = actionCommand?.name() ?? this.args?.[0] ?? process.argv[2] ?? "";
 
 	// Skip auth check for public commands
 	if (PUBLIC_COMMANDS.includes(commandName)) {
