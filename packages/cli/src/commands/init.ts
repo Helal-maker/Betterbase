@@ -1310,12 +1310,17 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 
 	// IaC mode (default) - Convics-style infrastructure as code
 	if (useIaCMode) {
-		// Prompt for project name with validation
-		const projectNameInput = await prompts.text({
-			message: "What is your project name?",
-			initial: "my-betterbase-app",
-		});
-		const projectName = projectNameSchema.parse(projectNameInput);
+		// Use project name from CLI option if provided, otherwise prompt
+		let projectName: string;
+		if (options.projectName) {
+			projectName = projectNameSchema.parse(options.projectName);
+		} else {
+			const projectNameInput = await prompts.text({
+				message: "What is your project name?",
+				initial: "my-betterbase-app",
+			});
+			projectName = projectNameSchema.parse(projectNameInput);
+		}
 		const projectPath = path.resolve(process.cwd(), projectName);
 
 		logger.info(`Creating BetterBase IaC project: ${projectName}`);
@@ -1331,6 +1336,23 @@ export async function runInitCommand(rawOptions: InitCommandOptions): Promise<vo
 				if (!overwrite) {
 					logger.info("Aborted. Choose a different project name.");
 					process.exit(0);
+				}
+				// Clean up existing directory
+				try {
+					await Bun.write(projectPath + "/.keep", "");
+					const files = await Bun.file(projectPath).ls();
+					await Promise.all(
+						files.map(async (f) => {
+							const fullPath = path.resolve(projectPath, f.name);
+							await Bun.write(fullPath, "");
+						}),
+					);
+					await Bun.file(projectPath)
+						.delete()
+						.catch(() => {});
+					await Bun.mkdir(projectPath, { recursive: true }).catch(() => {});
+				} catch (err) {
+					logger.error(`Failed to clean directory: ${err}`);
 				}
 			}
 

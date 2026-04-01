@@ -60,7 +60,7 @@ export default function ProjectLayout() {
 	];
 
 	const currentPath = location.pathname;
-	const activeTab = tabs.find((tab) => tab.href === currentPath)?.value ?? "overview";
+	const activeTab = tabs.find((tab) => currentPath.startsWith(tab.href))?.value ?? "overview";
 
 	return (
 		<div>

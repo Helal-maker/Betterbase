@@ -1,8 +1,12 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import type { Pool } from "pg";
+import { validateEnv } from "./env";
 
-const getSecret = () => new TextEncoder().encode(process.env.BETTERBASE_JWT_SECRET!);
+const getSecret = () => {
+	const env = validateEnv();
+	return new TextEncoder().encode(env.BETTERBASE_JWT_SECRET);
+};
 
 const TOKEN_EXPIRY = "30d";
 const BCRYPT_ROUNDS = 12;

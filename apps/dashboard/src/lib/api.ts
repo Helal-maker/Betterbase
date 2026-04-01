@@ -96,10 +96,6 @@ export const api = {
 };
 
 export async function checkSetup(): Promise<boolean> {
-	const res = await fetch(`${API_BASE}/admin/auth/setup`, {
-		method: "POST",
-		headers: { "Content-Type": "application/json" },
-		body: JSON.stringify({ _check: true }),
-	});
+	const res = await fetch(`${API_BASE}/admin/auth/setup-status`);
 	return res.status !== 410;
 }

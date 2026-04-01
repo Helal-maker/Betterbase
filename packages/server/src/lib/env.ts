@@ -21,7 +21,10 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
+let validatedEnv: Env | null = null;
+
 export function validateEnv(): Env {
+	if (validatedEnv) return validatedEnv;
 	const result = EnvSchema.safeParse(process.env);
 	if (!result.success) {
 		console.error("[env] Invalid environment variables:");
@@ -50,5 +53,6 @@ export function validateEnv(): Env {
 		result.data.INNGEST_EVENT_KEY = "betterbase-dev-event-key";
 	}
 
-	return result.data;
+	validatedEnv = result.data;
+	return validatedEnv;
 }

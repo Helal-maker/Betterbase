@@ -114,7 +114,7 @@ export const schema = defineSchema({
 
 ```typescript
 // betterbase/queries/posts.ts
-import { query } from "@betterbase/core/iac"
+import { query, v } from "@betterbase/core/iac"
 
 export const listPosts = query({
   args: { published: v.optional(v.boolean()) },
@@ -129,7 +129,7 @@ export const listPosts = query({
 
 ```typescript
 // betterbase/mutations/posts.ts
-import { mutation } from "@betterbase/core/iac"
+import { mutation, v } from "@betterbase/core/iac"
 
 export const createPost = mutation({
   args: {
@@ -409,8 +409,8 @@ export const auth = betterAuth({
 
 Betterbase integrates with database RLS for secure data access:
 
-```typescript
-// In your schema or via CLI
+```bash
+# In your schema or via CLI
 bb rls add \
   --table posts \
   --name users_own_posts \
@@ -642,6 +642,6 @@ SOFTWARE.
 
 **Built with ❤️ by Weroperking**
 
-Website • [Documentation](../docs/README.md) • [Discord](https://discord.gg/R6Dm6Cgy2E) • [GitHub](https://github.com/weroperking/Betterbase) • Twitter
+Website • [Documentation](../docs/README.md) • [Discord](https://discord.gg/R6Dm6Cgy2E) • [GitHub](https://github.com/weroperking/Betterbase)
 
 </div>

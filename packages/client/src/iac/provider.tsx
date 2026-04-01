@@ -49,6 +49,7 @@ export function BetterbaseProvider({
 			};
 			ws.onclose = () => {
 				if (isCleaned) return;
+				setWsReady(false);
 				wsRef.current = null;
 				timeoutId = setTimeout(connect, reconnectDelayMs);
 				reconnectDelayMs = Math.min(reconnectDelayMs * 2, maxReconnectDelayMs);

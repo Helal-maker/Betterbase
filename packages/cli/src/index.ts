@@ -36,10 +36,9 @@ const PUBLIC_COMMANDS = [
 	"help",
 	"init",
 	"--version",
-	"-v",
+	"-V",
 	"--help",
 	"-h",
-	"-V",
 ];
 
 /**
@@ -564,11 +563,21 @@ export function createProgram(): Command {
 		.description("Authenticate with a Betterbase instance")
 		.option("--url <url>", "Self-hosted Betterbase server URL", "https://api.betterbase.io")
 		.option("--email <email>", "Admin email (for headless/server login)")
-		.option("--password <password>", "Admin password (for headless/server login)")
 		.action(async (opts) => {
-			if (opts.email && opts.password) {
+			if (opts.email) {
 				const { runApiKeyLogin } = await import("./commands/login");
-				await runApiKeyLogin({ serverUrl: opts.url, email: opts.email, password: opts.password });
+				let password = process.env.ADMIN_PASSWORD;
+				if (!password) {
+					const { default: prompts } = await import("prompts");
+					const result = await prompts({
+						type: "password",
+						name: "password",
+						message: "Admin password:",
+						validate: (p: string) => p.length >= 1,
+					});
+					password = result.password;
+				}
+				await runApiKeyLogin({ serverUrl: opts.url, email: opts.email, password });
 			} else {
 				await runLoginCommand({ serverUrl: opts.url });
 			}

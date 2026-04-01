@@ -65,6 +65,18 @@ authRoutes.get("/me", async (c) => {
 // POST /admin/auth/logout  (client-side token discard — stateless)
 authRoutes.post("/logout", (c) => c.json({ success: true }));
 
+// GET /admin/auth/setup-status — check if admin exists (no body validation)
+authRoutes.get("/setup-status", async (c) => {
+	const pool = getPool();
+	const { rows } = await pool.query(
+		"SELECT COUNT(*)::int as count FROM betterbase_meta.admin_users",
+	);
+	if (rows[0].count === 0) {
+		return c.json({ setup: false }, 404);
+	}
+	return c.json({ setup: true });
+});
+
 // POST /admin/auth/setup  — available only before first admin is created
 authRoutes.post(
 	"/setup",

@@ -4,6 +4,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 import { signAdminToken } from "../../lib/auth";
 import { getPool } from "../../lib/db";
+import { validateEnv } from "../../lib/env";
 
 export const deviceRouter = new Hono();
 
@@ -23,8 +24,8 @@ deviceRouter.post("/code", async (c) => {
 		[userCode, deviceCode, expiresAt],
 	);
 
-	const baseUrl =
-		process.env.BETTERBASE_PUBLIC_URL ?? `http://localhost:${process.env.PORT ?? 3001}`;
+	const env = validateEnv();
+	const baseUrl = env.BETTERBASE_PUBLIC_URL ?? `http://localhost:${env.PORT}`;
 
 	return c.json({
 		device_code: deviceCode,

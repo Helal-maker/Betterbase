@@ -142,7 +142,7 @@ export async function runApiKeyLogin(opts: {
 	section("API Key Login");
 
 	try {
-		const res = await fetch(`${serverUrl}/admin/auth`, {
+		const res = await fetch(`${serverUrl}/admin/auth/login`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ email: opts.email, password: opts.password }),
